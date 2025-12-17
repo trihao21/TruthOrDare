@@ -163,7 +163,6 @@ const QuestionInputScreen = ({ onBack }) => {
                             const count = rows.filter(r => r.category === cat.id && r.content.trim()).length
                             if (count === 0) return null
                             return (
-                            return (
                                 <div key={cat.id} className={`px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-bold text-white ${cat.color} shadow-sm animate-fade-in`}>
                                     {cat.label}: {count}
                                 </div>
