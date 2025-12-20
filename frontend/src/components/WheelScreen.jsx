@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { gameService } from '../services/gameService'
 import { canvasService } from '../services/canvasService'
 
-function WheelScreen({ onSpinComplete, onManage, onInput }) {
+function WheelScreen({ onSpinComplete }) {
   const canvasRef = useRef(null)
   const [isSpinning, setIsSpinning] = useState(false)
   const [currentRotation, setCurrentRotation] = useState(0)
@@ -61,22 +61,11 @@ function WheelScreen({ onSpinComplete, onManage, onInput }) {
       <div className="absolute top-40 left-40 text-4xl opacity-30">⭐</div>
       <div className="absolute bottom-32 right-40 text-5xl opacity-30">✨</div>
 
-      <div className="flex gap-4 absolute top-8 right-8 z-30">
-        <button onClick={onInput} className="group relative">
-          <div className="absolute inset-0 bg-purple-700 rounded-2xl translate-y-2"></div>
-          <div className="relative bg-white border-2 border-purple-200 px-6 py-3 rounded-2xl font-bold text-purple-600 flex items-center gap-2 active:translate-y-2 transition-transform shadow-lg group-hover:-translate-y-1">
-            <span className="text-2xl">+</span>
-            <span>Thêm câu hỏi</span>
-          </div>
-        </button>
+      {/* User info and logout */}
+      {/* Removed - now handled by Layout component */}
 
-        <button onClick={onManage} className="group relative">
-          <div className="absolute inset-0 bg-gray-700 rounded-2xl translate-y-2"></div>
-          <div className="relative bg-white border-2 border-gray-200 px-6 py-3 rounded-2xl font-bold text-gray-600 flex items-center gap-2 active:translate-y-2 transition-transform shadow-lg group-hover:-translate-y-1">
-            <span className="text-xl">⚙️</span>
-          </div>
-        </button>
-      </div>
+      {/* Navigation buttons */}
+      {/* Removed - now handled by Layout component */}
 
       {/* Title */}
       <h1 className="text-7xl font-black text-white mb-12 tracking-wider spin-title">SPIN TO WIN</h1>

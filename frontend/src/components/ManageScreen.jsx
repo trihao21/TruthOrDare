@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../services'
 
-function ManageScreen({ questions, onBack, onUpdate }) {
+function ManageScreen({ questions, onBack, onUpdate, currentUser }) {
   const [currentTab, setCurrentTab] = useState('TRUTH')
   const [newQuestion, setNewQuestion] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,9 +50,12 @@ function ManageScreen({ questions, onBack, onUpdate }) {
       </button>
 
       {/* Title */}
-      <h1 className="text-5xl font-black text-center text-white mb-12 mt-8">
+      <h1 className="text-5xl font-black text-center text-white mb-4 mt-8">
         Quản lý câu hỏi
       </h1>
+      <p className="text-center text-white/80 mb-8">
+        Xin chào, <span className="font-bold">{currentUser?.username}</span>!
+      </p>
 
       {/* Tabs */}
       <div className="max-w-4xl mx-auto">

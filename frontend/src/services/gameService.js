@@ -42,7 +42,7 @@ export const gameService = {
     return 1 - Math.pow(1 - progress, 3)
   },
 
-  // Get random question from array
+  // Get random question from array (legacy support)
   getRandomQuestion(questions) {
     if (!questions || questions.length === 0) {
       return { content: 'Không có câu hỏi nào!' }
