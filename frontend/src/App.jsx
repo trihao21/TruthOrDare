@@ -4,7 +4,7 @@ import ResultScreen from './components/ResultScreen'
 import CardScreen from './components/CardScreen'
 import ManageScreen from './components/ManageScreen'
 import QuestionInputScreen from './components/QuestionInputScreen'
-import { api } from './api'
+import { api } from './services'
 
 function App() {
   const [screen, setScreen] = useState('wheel')

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../api'
+import { api } from '../services'
 
 // Helper for generating unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9)
@@ -130,19 +130,31 @@ const QuestionInputScreen = ({ onBack }) => {
                                         ))}
                                     </div>
 
-                                    {/* Text Input */}
-                                    <textarea
-                                        value={row.content}
-                                        onChange={(e) => updateRow(row.id, 'content', e.target.value)}
-                                        placeholder={`Nhập ${row.category === 'CỎ 3 LÁ' ? 'điều gì đó' : row.category === 'TRUTH' ? 'câu hỏi sự thật' : 'thử thách'}...`}
-                                        rows={1}
-                                        className="flex-1 bg-transparent border-none outline-none text-gray-700 text-base font-medium placeholder-gray-400 resize-none min-h-[2.5rem] py-2"
-                                        style={{ minHeight: '40px' }}
-                                        onInput={(e) => {
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = e.target.scrollHeight + 'px';
-                                        }}
-                                    />
+                                    {/* Text Input with Clear Button */}
+                                    <div className="flex-1 flex items-center gap-2 relative">
+                                        <textarea
+                                            value={row.content}
+                                            onChange={(e) => updateRow(row.id, 'content', e.target.value)}
+                                            placeholder={`Nhập ${row.category === 'CỎ 3 LÁ' ? 'điều gì đó' : row.category === 'TRUTH' ? 'câu hỏi sự thật' : 'thử thách'}...`}
+                                            rows={1}
+                                            className="flex-1 bg-transparent border-none outline-none text-gray-700 text-base font-medium placeholder-gray-400 resize-none min-h-[2.5rem] py-2 pr-8"
+                                            style={{ minHeight: '40px' }}
+                                            onInput={(e) => {
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = e.target.scrollHeight + 'px';
+                                            }}
+                                        />
+                                        {/* Clear Button - only show when content exists */}
+                                        {row.content && (
+                                            <button
+                                                onClick={() => updateRow(row.id, 'content', '')}
+                                                className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all active:scale-95"
+                                                title="Xóa nội dung"
+                                            >
+                                                <span className="text-sm">✕</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Delete Button */}

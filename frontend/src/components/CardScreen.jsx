@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { gameService } from '../services/gameService'
 
 function CardScreen({ result, questions, onBack }) {
   const [isDrawing, setIsDrawing] = useState(false)
@@ -13,7 +14,7 @@ function CardScreen({ result, questions, onBack }) {
 
     // Shuffle animation delay
     setTimeout(() => {
-      const randomQuestion = questions[Math.floor(Math.random() * questions.length)]
+      const randomQuestion = gameService.getRandomQuestion(questions)
       setDrawnCard(randomQuestion)
       setIsDrawing(false)
     }, 800)

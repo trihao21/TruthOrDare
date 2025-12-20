@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { api } from '../api'
+import { api } from '../services'
 
 function ManageScreen({ questions, onBack, onUpdate }) {
   const [currentTab, setCurrentTab] = useState('TRUTH')
