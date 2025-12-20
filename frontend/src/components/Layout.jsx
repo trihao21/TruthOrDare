@@ -27,21 +27,25 @@ function Layout({ children }) {
 
             {/* Navigation Links */}
             <div className="flex items-center space-x-4">
-              {/* Always show home link */}
-              <Link 
-                to="/" 
-                className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Trang chủ
-              </Link>
+              {/* Only show home link for admin */}
+              {isAuthenticated && currentUser?.role === 'admin' && (
+                <Link 
+                  to="/" 
+                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Trang chủ
+                </Link>
+              )}
               
-              {/* Always show add question link */}
-              <Link 
-                to="/add-question" 
-                className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Thêm câu hỏi
-              </Link>
+              {/* Only show add question link for admin */}
+              {isAuthenticated && currentUser?.role === 'admin' && (
+                <Link 
+                  to="/add-question" 
+                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Thêm câu hỏi
+                </Link>
+              )}
               
               {/* Only show manage link for admin */}
               {isAuthenticated && currentUser?.role === 'admin' && (

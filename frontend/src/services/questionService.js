@@ -125,10 +125,6 @@ export const questionService = {
     } else {
       const trimmedContent = content.trim();
       
-      if (trimmedContent.length < 10) {
-        errors.push(`Câu hỏi phải có ít nhất 10 ký tự (hiện tại: ${trimmedContent.length})`);
-      }
-
       if (trimmedContent.length > 500) {
         errors.push(`Câu hỏi không được vượt quá 500 ký tự (hiện tại: ${trimmedContent.length})`);
       }

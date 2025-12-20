@@ -68,7 +68,7 @@ function WheelScreen({ onSpinComplete }) {
       {/* Removed - now handled by Layout component */}
 
       {/* Title */}
-      <h1 className="text-7xl font-black text-white mb-12 tracking-wider spin-title">SPIN TO WIN</h1>
+      <h1 className="text-7xl font-black text-white mb-12 tracking-wider spin-title" data-tour="wheel-title">SPIN TO WIN</h1>
 
       {/* Wheel Container */}
       <div className="relative">
@@ -79,13 +79,14 @@ function WheelScreen({ onSpinComplete }) {
 
         {/* Wheel */}
         <div className="wheel-container">
-          <canvas ref={canvasRef} width="500" height="500"></canvas>
+          <canvas ref={canvasRef} width="500" height="500" data-tour="wheel-canvas"></canvas>
 
           {/* Center Button */}
           <button
             onClick={spinWheel}
             disabled={isSpinning}
             className="spin-button"
+            data-tour="wheel-spin-button"
           >
             <span className="text-5xl font-black text-white">GO</span>
           </button>

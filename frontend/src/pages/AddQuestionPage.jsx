@@ -1,6 +1,9 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { questionService, authService } from '../services'
+import TourGuide from '../components/TourGuide'
+import { tourService } from '../services/tourService'
+import SecretMissionPopup from '../components/SecretMissionPopup'
 
 // Helper for generating unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9)
@@ -12,9 +15,10 @@ function AddQuestionPage() {
     { id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }
   ])
   const [loading, setLoading] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSecretMission, setShowSecretMission] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [globalError, setGlobalError] = useState('')
+  const [showErrorModal, setShowErrorModal] = useState(false)
 
   const categories = [
     { id: 'truth', label: 'T', color: 'bg-blue-500', fullLabel: 'Sự thật' },
@@ -70,6 +74,7 @@ function AddQuestionPage() {
     // Check authentication
     if (!authService.isAuthenticated()) {
       setGlobalError('Bạn cần đăng nhập để thêm câu hỏi')
+      setShowErrorModal(true)
       return
     }
 
@@ -88,6 +93,7 @@ function AddQuestionPage() {
 
     if (hasErrors) {
       setGlobalError('Vui lòng sửa các lỗi trước khi gửi')
+      setShowErrorModal(true)
       return
     }
 
@@ -96,8 +102,39 @@ function AddQuestionPage() {
 
     if (validRows.length === 0) {
       setGlobalError('Vui lòng nhập ít nhất một câu hỏi')
+      setShowErrorModal(true)
       return
     }
+
+    // Check minimum requirements: at least 10 truth and 10 dare
+    // Temporarily disabled for testing
+    /*
+    const truthCount = validRows.filter(r => r.category === 'truth').length
+    const dareCount = validRows.filter(r => r.category === 'dare').length
+
+    const missingTruth = 10 - truthCount
+    const missingDare = 10 - dareCount
+
+    if (truthCount < 10 || dareCount < 10) {
+      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
+      
+      if (truthCount < 10) {
+        errorMessage += `• Cần ít nhất 10 câu hỏi Truth (hiện tại: ${truthCount}, còn thiếu: ${missingTruth})\n`
+      } else {
+        errorMessage += `• Truth: ${truthCount}/10 ✓\n`
+      }
+      
+      if (dareCount < 10) {
+        errorMessage += `• Cần ít nhất 10 câu hỏi Dare (hiện tại: ${dareCount}, còn thiếu: ${missingDare})`
+      } else {
+        errorMessage += `• Dare: ${dareCount}/10 ✓`
+      }
+      
+      setGlobalError(errorMessage)
+      setShowErrorModal(true)
+      return
+    }
+    */
 
     setLoading(true)
     setGlobalError('')
@@ -116,16 +153,14 @@ function AddQuestionPage() {
         throw new Error(`Không thể thêm một số câu hỏi: ${errorMessages}`)
       }
 
-      setShowSuccess(true)
+      // Show secret mission popup instead of success
+      setShowSecretMission(true)
       // Reset to one empty row
       setRows([{ id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }])
-      setTimeout(() => {
-        setShowSuccess(false)
-        navigate('/')
-      }, 2000)
     } catch (error) {
       console.error('Submit error:', error)
       setGlobalError(error.message || 'Gửi câu hỏi thất bại. Vui lòng thử lại.')
+      setShowErrorModal(true)
     } finally {
       setLoading(false)
     }
@@ -187,17 +222,6 @@ function AddQuestionPage() {
         </div>
       )}
 
-      {/* Global Error Message */}
-      {globalError && (
-        <div className="w-full max-w-3xl mb-4">
-          <div className="bg-red-100/80 backdrop-blur-xl border border-red-400/50 text-red-700 px-4 py-3 rounded-2xl shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">❌</span>
-              <p className="text-sm font-medium">{globalError}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Container */}
       <div className="w-full max-w-3xl perspective-1000 flex-1 flex flex-col min-h-0">
@@ -233,7 +257,7 @@ function AddQuestionPage() {
                   }`}>
                     <div className="flex gap-3 items-center">
                       {/* Category Selector */}
-                      <div className="flex shrink-0 p-1 bg-gray-50 rounded-lg">
+                      <div className="flex shrink-0 p-1 bg-gray-50 rounded-lg" data-tour="add-question-category">
                         {categories.map((cat) => (
                           <button
                             key={cat.id}
@@ -260,6 +284,7 @@ function AddQuestionPage() {
                             row.errors.length > 0 ? 'text-red-600' : ''
                           }`}
                           maxLength={500}
+                          data-tour="add-question-input"
                           onInput={(e) => {
                             const target = e.target;
                             target.style.height = 'auto';
@@ -278,7 +303,7 @@ function AddQuestionPage() {
                         {row.content && (
                           <button
                             onClick={() => updateRow(row.id, 'content', '')}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all active:scale-95"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-all active:scale-95 z-10"
                             title="Xóa nội dung"
                           >
                             <span className="text-sm">✕</span>
@@ -293,40 +318,37 @@ function AddQuestionPage() {
                     onClick={() => handleDeleteRow(row.id)}
                     className="w-8 h-8 flex shrink-0 items-center justify-center text-red-500 border border-red-500 bg-white rounded-full hover:bg-red-50 transition-colors shadow-sm active:scale-95"
                   >
-                    <span className="text-sm">✕</span>
+                    <span className="text-sm">🗑️</span>
                   </button>
                 </div>
 
-                {/* Error messages and character count - BELOW the main row */}
-                {(row.errors.length > 0 || row.content.length > 0) && (
-                  <div className="ml-0 md:ml-12 mt-2 space-y-1">
-                    {/* Error messages - separate row */}
-                    {row.errors.length > 0 && (
-                      <div className="text-red-500 space-y-1 text-xs">
-                        {row.errors.map((error, errorIndex) => (
-                          <div key={errorIndex} className="flex items-center gap-1">
-                            <span>⚠️</span>
-                            <span>{error}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Character count - separate row, only show if there's content */}
-                    {row.content.length > 0 && (
-                      <div className="flex justify-end">
-                        <div className={`text-xs ${
-                          row.content.length > 450 ? 'text-red-500' : 
-                          row.content.length > 400 ? 'text-yellow-600' : 'text-gray-500'
-                        }`}>
-                          {row.content.length}/500
+                {/* Error messages - BELOW the main row */}
+                {row.errors.length > 0 && (
+                  <div className="ml-0 md:ml-12 mt-2">
+                    <div className="text-red-500 space-y-1 text-xs">
+                      {row.errors.map((error, errorIndex) => (
+                        <div key={errorIndex} className="flex items-center gap-1">
+                          <span>⚠️</span>
+                          <span>{error}</span>
                         </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
+
+            {/* Add Row Button - inside scrollable area, below last row */}
+            <button
+              onClick={handleAddRow}
+              className="w-full group relative"
+              data-tour="add-question-add-row"
+            >
+              <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
+              <div className="relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-gray-500 text-sm flex items-center justify-center gap-2 active:translate-y-1 transition-transform group-hover:border-purple-200 group-hover:text-purple-500">
+                <span className="text-lg font-black">+</span> Thêm dòng
+              </div>
+            </button>
           </div>
 
           {/* Summary Counts */}
@@ -343,22 +365,12 @@ function AddQuestionPage() {
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-2 border-t border-white/30 flex gap-4">
-
-            <button
-              onClick={handleAddRow}
-              className="flex-1 group relative"
-            >
-              <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
-              <div className="relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-gray-500 text-sm flex items-center justify-center gap-2 active:translate-y-1 transition-transform group-hover:border-purple-200 group-hover:text-purple-500">
-                <span className="text-lg font-black">+</span> Thêm dòng
-              </div>
-            </button>
-
+          <div className="pt-2 border-t border-white/30">
             <button
               onClick={handleSubmit}
               disabled={loading || !authService.isAuthenticated()}
-              className="flex-[2] group relative disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full group relative disabled:opacity-70 disabled:cursor-not-allowed"
+              data-tour="add-question-submit"
             >
               <div className="absolute inset-0 bg-purple-700 rounded-xl translate-y-1"></div>
               <div className="relative bg-gradient-to-r from-purple-500 to-indigo-600 py-2.5 rounded-xl font-bold text-white text-sm shadow-lg active:translate-y-1 transition-transform flex items-center justify-center gap-2">
@@ -375,6 +387,47 @@ function AddQuestionPage() {
 
         </div>
       </div>
+
+      {/* Error Modal */}
+      {showErrorModal && globalError && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[2rem] p-6 max-w-md w-full shadow-2xl animate-pop-in relative">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowErrorModal(false)
+                setGlobalError('')
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold p-2"
+            >
+              ✕
+            </button>
+
+            <div className="text-center mb-4">
+              <div className="text-4xl mb-2">❌</div>
+              <h2 className="text-xl font-black text-gray-800">Lỗi</h2>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+                <p className="text-sm font-medium text-red-700 whitespace-pre-line text-left">{globalError}</p>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  setShowErrorModal(false)
+                  setGlobalError('')
+                }}
+                className="bg-red-500 border-2 border-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors text-sm"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info Modal */}
       {showInfo && (
@@ -414,7 +467,6 @@ function AddQuestionPage() {
             <div className="mt-6 p-4 bg-yellow-50 rounded-xl">
               <h3 className="text-sm font-bold text-yellow-800 mb-2">� Quy tắc hviết câu hỏi:</h3>
               <ul className="text-xs text-yellow-700 space-y-1">
-                <li>• Câu hỏi phải có ít nhất 10 ký tự</li>
                 <li>• Tối đa 500 ký tự</li>
                 <li>• Nội dung phải có ý nghĩa, không lặp lại ký tự</li>
                 <li>• Truth: Khám phá suy nghĩ, cảm xúc</li>
@@ -435,22 +487,43 @@ function AddQuestionPage() {
         </div>
       )}
 
-      {/* Success Overlay */}
-      {showSuccess && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50 animate-fade-in">
-          <div className="text-center transform animate-bounce-in bg-white p-8 rounded-3xl shadow-2xl">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-3xl font-black text-gray-800 mb-2">Đã lưu!</h3>
-            <p className="text-gray-500 font-medium">Đã thêm câu hỏi thành công.</p>
-            <p className="text-sm text-gray-400 mt-2">Đang chuyển về trang chủ...</p>
-          </div>
-        </div>
+      {/* Secret Mission Popup */}
+      {showSecretMission && (
+        <SecretMissionPopup onClose={() => setShowSecretMission(false)} />
       )}
 
       {/* Decorative Background Elements */}
       <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none"></div>
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none"></div>
 
+      {/* Tour Guide */}
+      <TourGuide
+        tourName="add-question"
+        steps={[
+          {
+            target: '[data-tour="add-question-category"]',
+            content: 'Đây là nơi bạn thêm câu hỏi mới! Đầu tiên, chọn loại câu hỏi: T (Truth - Sự thật) hoặc D (Dare - Thử thách). Bạn cần ít nhất 10 câu mỗi loại để có thể gửi.',
+            allowClickOutside: false
+          },
+          {
+            target: '[data-tour="add-question-input"]',
+            content: 'Nhập nội dung câu hỏi vào đây. Tối đa 500 ký tự. Bạn có thể nhấn nút X màu đỏ để xóa nội dung nếu cần.',
+            allowClickOutside: false
+          },
+          {
+            target: '[data-tour="add-question-add-row"]',
+            content: 'Nhấn nút "Thêm dòng" để thêm câu hỏi mới. Bạn có thể thêm nhiều câu hỏi cùng lúc.',
+            allowClickOutside: false
+          },
+          {
+            target: '[data-tour="add-question-submit"]',
+            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần đăng nhập để thêm câu hỏi.',
+            allowClickOutside: false
+          }
+        ]}
+        onComplete={() => {}}
+        autoStart={!tourService.isTourCompleted('add-question')}
+      />
     </div>
   )
 }

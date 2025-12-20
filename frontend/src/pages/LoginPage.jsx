@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authService, utilService } from '../services'
+import TourGuide from '../components/TourGuide'
 
 const defaultAccounts = [
   { username: 'admin', displayName: 'Quản trị viên', role: 'admin', password: 'admin123' },
@@ -82,7 +83,7 @@ function LoginPage() {
         </div>
 
         {/* Quick Login Buttons */}
-        <div className="mb-6">
+        <div className="mb-6" data-tour="login-quick-accounts">
           <h3 className="text-sm font-medium text-gray-700 mb-3">Tài khoản có sẵn:</h3>
           <div className="space-y-2">
             {/* Admin Account */}
@@ -90,6 +91,7 @@ function LoginPage() {
               onClick={() => handleQuickLogin(defaultAccounts[0].username, defaultAccounts[0].password)}
               disabled={loading}
               className="w-full p-3 bg-gradient-to-r from-red-100 to-orange-100 hover:from-red-200 hover:to-orange-200 rounded-lg border-2 border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              data-tour="login-admin-button"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -133,7 +135,7 @@ function LoginPage() {
         </div>
 
         {/* Manual Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-tour="login-form">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tên đăng nhập
@@ -147,6 +149,7 @@ function LoginPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={loading}
               autoComplete="username"
+              data-tour="login-username-input"
             />
           </div>
 
@@ -163,6 +166,7 @@ function LoginPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={loading}
               autoComplete="current-password"
+              data-tour="login-password-input"
             />
           </div>
 
@@ -176,6 +180,7 @@ function LoginPage() {
             type="submit"
             disabled={loading || !formData.username.trim() || !formData.password}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            data-tour="login-submit-button"
           >
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
@@ -190,6 +195,29 @@ function LoginPage() {
           </button>
         </div>
       </div>
+
+      {/* Tour Guide */}
+      <TourGuide
+        tourName="login"
+        steps={[
+          {
+            target: '[data-tour="login-quick-accounts"]',
+            content: 'Chào mừng bạn đến với Hipdam! Đây là các tài khoản có sẵn. Bạn có thể chọn một tài khoản để đăng nhập nhanh, hoặc đăng nhập thủ công ở bên dưới.',
+            allowClickOutside: false
+          },
+          {
+            target: '[data-tour="login-form"]',
+            content: 'Nếu bạn muốn đăng nhập thủ công, hãy nhập tên đăng nhập và mật khẩu vào đây. Hoặc bạn có thể sử dụng các tài khoản có sẵn ở trên.',
+            allowClickOutside: false
+          },
+          {
+            target: '[data-tour="login-submit-button"]',
+            content: 'Sau khi nhập đầy đủ thông tin, nhấn nút "Đăng nhập" để bắt đầu trải nghiệm. Sau khi đăng nhập, bạn sẽ được chuyển đến trang chủ để quay vòng quay!',
+            allowClickOutside: false
+          }
+        ]}
+        onComplete={() => {}}
+      />
     </div>
   )
 }

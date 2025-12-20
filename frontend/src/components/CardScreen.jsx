@@ -26,13 +26,13 @@ function CardScreen({ result, questions, onBack }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-[#B8D4E8] to-[#A4C4D8] flex flex-col items-center justify-center p-8 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-b from-[#B8D4E8] to-[#A4C4D8] flex flex-col items-center justify-center p-8 relative overflow-hidden" data-tour="card-screen">
       {/* Decorative clouds */}
       <div className="absolute top-20 left-10 w-32 h-16 bg-white/60 rounded-full blur-sm"></div>
       <div className="absolute top-20 right-10 w-40 h-20 bg-white/60 rounded-full blur-sm"></div>
 
       {/* Back Button */}
-      <button onClick={onBack} className="back-button">
+      <button onClick={onBack} className="back-button" data-tour="card-back-button">
         <span className="text-xl font-bold text-white">← Quay lại</span>
       </button>
 

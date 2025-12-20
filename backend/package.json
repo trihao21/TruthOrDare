@@ -6,15 +6,20 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "create-users": "node scripts/createDefaultUsers.js"
+    "create-users": "node scripts/createDefaultUsers.js",
+    "create-missions": "node scripts/createDefaultMissions.js",
+    "reset-mission1": "node scripts/resetMission1.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.20.3"
+    "mongoose": "^8.20.3",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.11"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
