@@ -90,3 +90,4 @@ Sau khi cấu hình, hệ thống sẽ tự động gửi email khi:
 3. **Lỗi certificate:**
    - Set `SMTP_REJECT_UNAUTHORIZED=false` nếu dùng self-signed certificate
 
+

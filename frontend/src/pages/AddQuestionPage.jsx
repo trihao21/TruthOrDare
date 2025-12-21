@@ -181,9 +181,7 @@ function AddQuestionPage() {
         >
           <div className="relative transform transition-transform active:scale-95 duration-150">
             <div className="absolute inset-0 bg-gray-400 rounded-full translate-y-1"></div>
-            <div className="relative bg-white border-2 border-gray-200 px-3 py-1.5 rounded-full font-bold text-gray-600 text-sm flex items-center gap-1 group-hover:-translate-y-0.5 transition-transform">
-              <span>←</span> Quay lại
-            </div>
+           
           </div>
         </button>
 
@@ -318,7 +316,7 @@ function AddQuestionPage() {
                     onClick={() => handleDeleteRow(row.id)}
                     className="w-8 h-8 flex shrink-0 items-center justify-center text-red-500 border border-red-500 bg-white rounded-full hover:bg-red-50 transition-colors shadow-sm active:scale-95"
                   >
-                    <span className="text-sm">🗑️</span>
+                    <img src="/trash1.svg" alt="Delete" className="w-4 h-4" />
                   </button>
                 </div>
 
