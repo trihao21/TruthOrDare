@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage'
 import AddQuestionPage from './pages/AddQuestionPage'
 import ManagePage from './pages/ManagePage'
 import LoginPage from './pages/LoginPage'
+import MissionLoginPage from './pages/MissionLoginPage'
+import MissionPage from './pages/MissionPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -199,6 +201,8 @@ function App() {
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/mission-login" element={<MissionLoginPage />} />
+        <Route path="/mission" element={<MissionPage />} />
         
         {/* Routes with Layout */}
         <Route path="/*" element={
