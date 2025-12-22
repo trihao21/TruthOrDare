@@ -1,9 +1,6 @@
 // Error handling middleware
 export const errorHandler = (err, req, res, next) => {
-    // Only log stack trace for server errors (500), not for client errors (4xx)
-    if (!err.status || err.status >= 500) {
-        console.error(err.stack);
-    }
+    console.error(err.stack);
 
     res.status(err.status || 500).json({
         error: {

@@ -123,15 +123,39 @@ function TourGuide({
       // Use requestAnimationFrame for better performance
       requestAnimationFrame(() => {
         const rect = element.getBoundingClientRect()
+        
+        // Check if element is significantly outside viewport
+        const viewportHeight = window.innerHeight
+        const viewportWidth = window.innerWidth
+        const padding = 100 // Padding to ensure element is comfortably visible
+        const isElementSignificantlyOutside = (
+          rect.bottom < padding ||
+          rect.top > viewportHeight - padding ||
+          rect.right < padding ||
+          rect.left > viewportWidth - padding
+        )
+        
+        // Only scroll if element is significantly outside viewport (to avoid constant scrolling)
+        if (isElementSignificantlyOutside) {
+          // Smooth scroll to bring element into view
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
+          })
+        }
+        
+        // Always update position based on current viewport position
+        // Use getBoundingClientRect directly (no scroll offset) since we're using fixed positioning
         const highlightPos = {
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.top,
+          left: rect.left,
           width: rect.width,
           height: rect.height
         }
         setHighlightPosition(highlightPos)
 
-        // Calculate tooltip position
+        // Calculate tooltip position based on current viewport position
         const tooltipPos = calculateTooltipPosition(rect)
         setTooltipPosition(tooltipPos)
       })
@@ -164,30 +188,40 @@ function TourGuide({
     if (!isActive || steps.length === 0) return
 
     let timeoutId
+    let rafId
     const handleUpdate = () => {
       clearTimeout(timeoutId)
+      // Cancel any pending animation frame
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
       timeoutId = setTimeout(() => {
-        updateHighlight()
-      }, 50) // Debounce for performance
+        rafId = requestAnimationFrame(() => {
+          updateHighlight()
+        })
+      }, 16) // ~60fps update rate
     }
 
     // Listen to scroll on window and all scrollable containers
-    window.addEventListener('scroll', handleUpdate, true) // Use capture phase to catch all scrolls
-    window.addEventListener('resize', handleUpdate)
+    window.addEventListener('scroll', handleUpdate, { passive: true, capture: true })
+    window.addEventListener('resize', handleUpdate, { passive: true })
 
     // Also listen to scroll on scrollable containers
     const scrollableElements = document.querySelectorAll('[class*="overflow"], [class*="scroll"]')
     scrollableElements.forEach(el => {
-      el.addEventListener('scroll', handleUpdate, true)
+      el.addEventListener('scroll', handleUpdate, { passive: true, capture: true })
     })
 
     return () => {
-      window.removeEventListener('scroll', handleUpdate, true)
+      window.removeEventListener('scroll', handleUpdate, { capture: true })
       window.removeEventListener('resize', handleUpdate)
       scrollableElements.forEach(el => {
-        el.removeEventListener('scroll', handleUpdate, true)
+        el.removeEventListener('scroll', handleUpdate, { capture: true })
       })
       clearTimeout(timeoutId)
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
     }
   }, [isActive, currentStep, steps, updateHighlight])
 

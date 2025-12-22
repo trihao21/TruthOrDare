@@ -98,7 +98,7 @@ function Layout({ children }) {
               {/* Auth Section */}
               {isAuthenticated ? (
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm font-medium text-gray-700 px-3 py-1.5 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 shadow-[0_2px_4px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]">
+                  <span className="text-sm font-medium py-2 text-gray-700 px-3 rounded-lg">
                     {currentUser?.role === 'admin' ? '👑' : '👤'} {currentUser?.displayName || currentUser?.username}
                   </span>
                   <button

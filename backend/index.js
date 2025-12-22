@@ -18,29 +18,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Hipdam Backend API',
-    endpoints: {
-      health: '/health',
-      auth: '/api/auth',
-      questions: '/api/questions',
-      missions: '/api/missions'
-    }
-  });
-});
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/missions', missionRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/questions', questionRoutes);
-app.use('/api/missions', missionRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFound);
