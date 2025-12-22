@@ -275,19 +275,24 @@ function MissionPage() {
         </div>
 
         {/* Info Banner */}
-        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl p-6 mb-8">
-          <div className="flex items-start gap-4">
+        <div className="bg-gradient-to-br from-[#D4CEFF]/20 via-[#A1CDED]/20 to-[#D4CEFF]/20 border-2 border-[#D4CEFF]/50 rounded-2xl p-6 mb-8 shadow-lg relative overflow-hidden">
+          {/* Decorative gradient overlay */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4CEFF]/30 to-transparent rounded-full blur-2xl -mr-16 -mt-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#A1CDED]/30 to-transparent rounded-full blur-2xl -ml-12 -mb-12"></div>
+          
+          <div className="flex items-start gap-4 relative z-10">
             <div className="text-4xl shrink-0">📸</div>
             <div className="flex-1">
-              <h3 className="font-bold text-yellow-800 mb-2 text-lg">
+              <h3 className="font-bold text-gray-800 mb-2 text-lg bg-gradient-to-r from-[#6B5FCF] to-[#4A90E2] bg-clip-text text-transparent">
                 Hướng dẫn Check-in
               </h3>
-              <p className="text-yellow-700 text-sm leading-relaxed mb-2">
+              <p className="text-gray-700 text-sm leading-relaxed mb-2">
                 Khi đến địa điểm và đủ thành viên, hãy chụp ảnh để check-in. 
                 Người chụp cuối cùng hoặc chụp sau thời gian quy định sẽ bị phạt! ⚠️
               </p>
-              <p className="text-yellow-600 text-xs">
-                ⏰ Thời gian phạt: 5 phút trước khi hết hạn
+              <p className="text-gray-600 text-xs flex items-center gap-1">
+                <span>⏰</span>
+                <span>Thời gian phạt: 5 phút trước khi hết hạn</span>
               </p>
             </div>
           </div>
@@ -391,7 +396,7 @@ function MissionPage() {
                 >
                   {/* Status Overlay with Lock */}
                   {isPending && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center z-20 pointer-events-auto">
                       <div className="text-center">
                         <div className={`text-5xl mb-2 ${isUnlocking ? 'lock-breaking' : ''}`}>
                           {isUnlocking ? '🔓' : '🔒'}
@@ -411,7 +416,7 @@ function MissionPage() {
                   )}
 
                   {isExpired && (
-                    <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+                    <div className="absolute inset-0 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center z-20 pointer-events-auto">
                       <div className="text-center">
                         <div className="text-5xl mb-2">⏰</div>
                         <p className="text-gray-600 font-semibold">Đã hết hạn</p>
@@ -419,7 +424,7 @@ function MissionPage() {
                     </div>
                   )}
 
-                  <div className="relative z-0">
+                  <div className={`relative z-0 ${isPending || isExpired ? 'select-none pointer-events-none opacity-30 blur-sm' : ''}`}>
                     {/* Mission Header */}
                     <div className="flex items-center gap-4 mb-4">
                       <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-300 ${
@@ -436,14 +441,29 @@ function MissionPage() {
                       </div>
                       <div className="flex-1">
                         <h2 className={`text-2xl font-black transition-colors ${
-                          isPending || isExpired ? 'text-gray-500' : 'text-gray-800'
+                          isPending || isExpired ? 'text-gray-400' : 'text-gray-800'
                         }`}>
-                          {mission.name === 'Đi ăn' ? '🍽️ ' : mission.name === 'Đi chụp photobooth' ? '📸 ' : '🍺 '}
-                          {mission.name}
+                          {isPending || isExpired ? '🔒 Nhiệm vụ bí mật' : (
+                            <>
+                              {mission.name === 'Đi ăn' ? '🍽️ ' : mission.name === 'Đi chụp photobooth' ? '📸 ' : '🍺 '}
+                              {mission.name}
+                            </>
+                          )}
                         </h2>
-                        <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                          <span>📍</span>
-                          <span>{mission.location}</span>
+                        <p className={`text-sm flex items-center gap-1 mt-1 ${
+                          isPending || isExpired ? 'text-gray-300' : 'text-gray-500'
+                        }`}>
+                          {isPending || isExpired ? (
+                            <>
+                              <span>🔒</span>
+                              <span>Nội dung sẽ được tiết lộ khi nhiệm vụ bắt đầu</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>📍</span>
+                              <span>{mission.location}</span>
+                            </>
+                          )}
                         </p>
                       </div>
                       {isCompleted && (

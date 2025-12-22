@@ -20,38 +20,53 @@ function SecretMissionPopup({ onClose }) {
           {/* Icon */}
           <div className="text-7xl mb-6 animate-bounce">🎯</div>
           
-          {/* Title */}
-          <h2 className="text-3xl font-black bg-gradient-to-r from-[#D4CEFF] to-[#A1CDED] bg-clip-text text-transparent mb-4">
-            Nhiệm Vụ Bí Mật
-          </h2>
+          {/* Title - Enhanced visibility */}
+          <div className="mb-6">
+            <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-[#6B5FCF] via-[#8B7FD9] to-[#4A90E2] bg-clip-text text-transparent drop-shadow-[0_2px_4px_rgba(107,95,207,0.3)]">
+              Nhiệm Vụ Bí Mật
+            </h2>
+            <div className="h-1 w-32 mx-auto bg-gradient-to-r from-[#D4CEFF] via-[#A1CDED] to-[#D4CEFF] rounded-full shadow-sm"></div>
+          </div>
           
           {/* Description */}
           <div className="bg-gradient-to-br from-[#D4CEFF]/10 to-[#A1CDED]/10 rounded-2xl p-6 mb-6 border border-[#D4CEFF]/30">
-            <p className="text-gray-800 text-base leading-relaxed mb-4 font-medium">
-              Chúc mừng bạn đã hoàn thành việc thêm câu hỏi! 🎉
+            <p className="text-gray-800 text-base leading-relaxed mb-3 font-semibold">
+              Chúc mừng bạn đã hoàn thành nhiệm vụ! 🎉
             </p>
             <p className="text-gray-700 text-sm leading-relaxed">
-              Bạn đã mở khóa tính năng <span className="font-bold text-[#D4CEFF]">Nhiệm Vụ Bí Mật</span>! 
-              Hệ thống sẽ gửi nhiệm vụ đặc biệt cho bạn sau mỗi khoảng thời gian cố định.
+              Bạn đã mở khóa thành công tính năng <span className="font-bold text-[#6B5FCF]">Nhiệm Vụ Bí Mật</span>. 
+              Hệ thống sẽ tự động gửi các nhiệm vụ đặc biệt đến bạn theo lịch trình định kỳ để bạn có thể tiếp tục khám phá và nhận phần thưởng.
             </p>
           </div>
 
           {/* Features */}
-          <div className="bg-gradient-to-br from-[#A1CDED]/10 to-[#D4CEFF]/10 rounded-xl p-4 mb-6 text-left border border-[#A1CDED]/30">
-            <p className="text-gray-800 text-sm font-semibold mb-2">✨ Tính năng:</p>
-            <ul className="text-gray-700 text-xs space-y-1 ml-4">
-              <li>• Nhiệm vụ được gửi định kỳ</li>
-              <li>• Phần thưởng độc quyền</li>
-              <li>• Trải nghiệm độc đáo</li>
+          <div className="bg-gradient-to-br from-[#A1CDED]/10 to-[#D4CEFF]/10 rounded-xl p-5 mb-6 text-left border border-[#A1CDED]/30">
+            <p className="text-gray-800 text-sm font-bold mb-3 flex items-center gap-2">
+              <span className="text-lg">✨</span>
+              <span>Tính năng nổi bật</span>
+            </p>
+            <ul className="text-gray-700 text-sm space-y-2 ml-1">
+              <li className="flex items-start gap-2">
+                <span className="text-[#6B5FCF] font-bold mt-0.5">•</span>
+                <span>Nhận nhiệm vụ tự động theo lịch trình</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#6B5FCF] font-bold mt-0.5">•</span>
+                <span>Phần thưởng độc quyền và đặc biệt</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#6B5FCF] font-bold mt-0.5">•</span>
+                <span>Trải nghiệm tương tác độc đáo và thú vị</span>
+              </li>
             </ul>
           </div>
 
           {/* Button */}
           <button
             onClick={handleContinue}
-            className="w-full bg-gradient-to-r from-[#D4CEFF] to-[#A1CDED] text-white font-bold py-4 px-6 rounded-xl hover:from-[#D4CEFF]/90 hover:to-[#A1CDED]/90 transition-all transform hover:scale-105 active:scale-95 shadow-lg text-lg"
+            className="w-full bg-gradient-to-r from-[#6B5FCF] to-[#4A90E2] text-white font-bold py-4 px-6 rounded-xl hover:from-[#5A4FBF] hover:to-[#3A80D2] transition-all transform hover:scale-105 active:scale-95 shadow-lg text-lg hover:shadow-xl"
           >
-            Tiếp Theo →
+            Khám Phá Ngay →
           </button>
         </div>
       </div>
