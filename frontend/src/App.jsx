@@ -8,7 +8,6 @@ import ManagePage from './pages/ManagePage'
 import LoginPage from './pages/LoginPage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
-import TimelinePage from './pages/TimelinePage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -25,19 +24,50 @@ function App() {
 
   useEffect(() => {
     console.log('App useEffect triggered')
+    let isMounted = true
+    
+    // Set a maximum loading time to prevent infinite loading
+    const maxLoadingTimer = setTimeout(() => {
+      if (isMounted) {
+        console.warn('Loading timeout - rendering app anyway')
+        setLoading(false)
+        setError('Không thể tải dữ liệu từ server. Ứng dụng sẽ hoạt động với dữ liệu mặc định.')
+        setQuestions({
+          'TRUTH': [],
+          'DARE': [],
+          'CỎ 3 LÁ': []
+        })
+      }
+    }, 8000) // 8 seconds max loading time
+    
     initializeApp()
+    
+    return () => {
+      isMounted = false
+      clearTimeout(maxLoadingTimer)
+    }
   }, [])
 
   const initializeApp = async () => {
     try {
-      // Initialize auth
-      await authService.init()
+      // Initialize auth (non-blocking)
+      authService.init().catch(() => {
+        // Auth init failed, continue anyway
+      })
       
-      // Load questions
+      // Load questions with fallback
       await loadQuestions()
     } catch (error) {
       console.error('App initialization failed:', error)
+      // Don't block the app, just show error and continue
       setError(error.message)
+      setLoading(false)
+      // Set empty questions to allow app to render
+      setQuestions({
+        'TRUTH': [],
+        'DARE': [],
+        'CỎ 3 LÁ': []
+      })
     }
   }
 
@@ -47,7 +77,15 @@ function App() {
       setLoading(true)
       setError(null)
       
-      const response = await api.getAllQuestions()
+      // Add timeout to prevent hanging (increased to 10 seconds)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - không thể kết nối đến server. Vui lòng kiểm tra server có đang chạy không.')), 10000)
+      )
+      
+      const response = await Promise.race([
+        api.getAllQuestions(),
+        timeoutPromise
+      ])
       console.log('API response:', response)
       
       // Handle both array and object responses
@@ -83,8 +121,12 @@ function App() {
       setQuestions(grouped)
     } catch (error) {
       console.error('Failed to load questions:', error)
-      setError(error.message)
-      // Set empty arrays to prevent crashes
+      // Don't show error if it's just a timeout - app can still work
+      const errorMessage = error.message || 'Không thể tải dữ liệu từ server'
+      if (!errorMessage.includes('timeout')) {
+        setError(errorMessage)
+      }
+      // Set empty arrays to prevent crashes - app can still work without questions
       setQuestions({
         'TRUTH': [],
         'DARE': [],
@@ -102,34 +144,60 @@ function App() {
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        fontSize: '18px'
+        fontSize: '18px',
+        backgroundColor: '#f3f4f6',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
       }}>
         Đang tải...
       </div>
     )
   }
 
-  if (error) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        fontSize: '18px',
-        color: 'red',
-        flexDirection: 'column'
-      }}>
-        <div>Lỗi: {error}</div>
-        <button onClick={loadQuestions} style={{ marginTop: '10px' }}>
-          Thử lại
-        </button>
-      </div>
-    )
-  }
+  // Always render the app, even if there's an error
+  // Error will be shown as a banner, not blocking the UI
 
   return (
     <Router>
+      {/* Show error banner if there's an error */}
+      {error && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#fee2e2',
+          borderBottom: '2px solid #dc2626',
+          padding: '12px 20px',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{ color: '#dc2626', fontSize: '14px', flex: 1 }}>
+            ⚠️ {error}
+          </div>
+          <button
+            onClick={() => {
+              setError(null)
+              loadQuestions()
+            }}
+            style={{
+              marginLeft: '20px',
+              padding: '6px 16px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
+      
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
         <Route path="/login" element={<LoginPage />} />
@@ -152,7 +220,6 @@ function App() {
                 } 
               />
               <Route path="/add-question" element={<AddQuestionPage />} />
-              <Route path="/timeline" element={<TimelinePage />} />
               <Route 
                 path="/manage" 
                 element={

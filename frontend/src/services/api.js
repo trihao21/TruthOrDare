@@ -45,6 +45,7 @@ const httpClient = {
     };
 
     try {
+      console.log(`Making request to: ${API_URL}${url}`)
       const response = await fetch(`${API_URL}${url}`, config);
       
       // Handle auth errors
@@ -62,8 +63,11 @@ const httpClient = {
       
       return response.json();
     } catch (error) {
+      console.error('API request failed:', error)
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
+        const errorMsg = `Không thể kết nối đến server tại ${API_URL}. ` +
+          `Vui lòng kiểm tra: 1) Server có đang chạy không? 2) URL có đúng không? 3) CORS có được cấu hình đúng không?`
+        throw new Error(errorMsg);
       }
       throw error;
     }

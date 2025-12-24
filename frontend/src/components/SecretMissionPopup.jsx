@@ -3,56 +3,45 @@ import { useNavigate } from 'react-router-dom'
 function SecretMissionPopup({ onClose }) {
   const navigate = useNavigate()
 
-  const handleContinue = () => {
+  const handleNext = () => {
     onClose()
-    navigate('/mission-login', { state: { redirectTo: '/mission' } })
+    navigate('/mission-login')
   }
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4 transform animate-pop-in relative overflow-hidden border-2 border-[#D4CEFF]">
-        {/* Decorative gradient elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4CEFF]/30 to-[#A1CDED]/30 rounded-full -mr-16 -mt-16"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#A1CDED]/30 to-[#D4CEFF]/30 rounded-full -ml-12 -mb-12"></div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]" onClick={onClose}>
+      <div 
+        className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute w-10 h-10 flex items-center justify-center rounded-full top-4 right-4 text-gray-400 hover:text-purple-600 text-xl font-semibold hover:bg-purple-50 transition-all duration-200 hover:scale-110"
+          aria-label="Đóng"
+        >
+          ✕
+        </button>
         
-        {/* Content */}
-        <div className="relative z-10 text-center">
-          {/* Icon */}
-          <div className="text-7xl mb-6 animate-bounce">🎯</div>
-          
-          {/* Title */}
-          <h2 className="text-3xl font-black bg-gradient-to-r from-[#D4CEFF] to-[#A1CDED] bg-clip-text text-transparent mb-4">
-            Nhiệm Vụ Bí Mật
-          </h2>
-          
-          {/* Description */}
-          <div className="bg-gradient-to-br from-[#D4CEFF]/10 to-[#A1CDED]/10 rounded-2xl p-6 mb-6 border border-[#D4CEFF]/30">
-            <p className="text-gray-800 text-base leading-relaxed mb-4 font-medium">
-              Chúc mừng bạn đã hoàn thành việc thêm câu hỏi! 🎉
-            </p>
-            <p className="text-gray-700 text-sm leading-relaxed">
-              Bạn đã mở khóa tính năng <span className="font-bold text-[#D4CEFF]">Nhiệm Vụ Bí Mật</span>! 
-              Hệ thống sẽ gửi nhiệm vụ đặc biệt cho bạn sau mỗi khoảng thời gian cố định.
-            </p>
+        <div className="text-center">
+          <div className="text-6xl mb-4">🎯</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Nhiệm Vụ Bí Mật</h2>
+          <p className="text-gray-600 mb-6 leading-relaxed">
+            Chúc mừng bạn đã hoàn thành việc thêm câu hỏi! Bây giờ bạn có cơ hội tham gia vào một nhiệm vụ bí mật đặc biệt. Hãy đăng nhập để khám phá!
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              Bỏ qua
+            </button>
+            <button
+              onClick={handleNext}
+              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+            >
+              Tiếp theo →
+            </button>
           </div>
-
-          {/* Features */}
-          <div className="bg-gradient-to-br from-[#A1CDED]/10 to-[#D4CEFF]/10 rounded-xl p-4 mb-6 text-left border border-[#A1CDED]/30">
-            <p className="text-gray-800 text-sm font-semibold mb-2">✨ Tính năng:</p>
-            <ul className="text-gray-700 text-xs space-y-1 ml-4">
-              <li>• Nhiệm vụ được gửi định kỳ</li>
-              <li>• Phần thưởng độc quyền</li>
-              <li>• Trải nghiệm độc đáo</li>
-            </ul>
-          </div>
-
-          {/* Button */}
-          <button
-            onClick={handleContinue}
-            className="w-full bg-gradient-to-r from-[#D4CEFF] to-[#A1CDED] text-white font-bold py-4 px-6 rounded-xl hover:from-[#D4CEFF]/90 hover:to-[#A1CDED]/90 transition-all transform hover:scale-105 active:scale-95 shadow-lg text-lg"
-          >
-            Tiếp Theo →
-          </button>
         </div>
       </div>
     </div>
@@ -60,4 +49,3 @@ function SecretMissionPopup({ onClose }) {
 }
 
 export default SecretMissionPopup
-

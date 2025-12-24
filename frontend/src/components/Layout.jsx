@@ -1,10 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { authService } from '../services'
+import SecretMissionPopup from './SecretMissionPopup'
 
 function Layout({ children }) {
   const navigate = useNavigate()
   const currentUser = authService.getCurrentUser()
   const isAuthenticated = authService.isAuthenticated()
+  const [showSecretMission, setShowSecretMission] = useState(false)
 
   const handleLogout = async () => {
     await authService.logout()
@@ -98,7 +101,25 @@ function Layout({ children }) {
               {/* Auth Section */}
               {isAuthenticated ? (
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm font-medium text-gray-700 px-3 py-1.5 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 shadow-[0_2px_4px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]">
+                  {/* Secret Mission Button (for testing) */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      console.log('Secret Mission button clicked')
+                      setShowSecretMission(true)
+                    }}
+                    className="relative px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all duration-300 group overflow-hidden cursor-pointer"
+                    style={{ transformStyle: 'preserve-3d' }}
+                    title="Mở Secret Mission (Test)"
+                    type="button"
+                  >
+                    {/* 3D Button Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-600 rounded-lg shadow-[0_4px_12px_rgba(139,92,246,0.4),0_2px_4px_rgba(236,72,153,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] transform group-hover:translate-y-[-2px] group-hover:shadow-[0_6px_16px_rgba(139,92,246,0.5),0_4px_8px_rgba(236,72,153,0.4),inset_0_1px_0_rgba(255,255,255,0.3)] group-active:translate-y-[1px] group-active:shadow-[0_2px_4px_rgba(139,92,246,0.3),inset_0_2px_4px_rgba(0,0,0,0.2)] transition-all duration-200"></div>
+                    <span className="relative z-10 transform group-hover:translate-z-[2px] transition-transform duration-300">🎯 Secret</span>
+                  </button>
+                  
+                  <span className="text-sm font-medium py-2 text-gray-700 px-3 rounded-lg">
                     {currentUser?.role === 'admin' ? '👑' : '👤'} {currentUser?.displayName || currentUser?.username}
                   </span>
                   <button
@@ -133,6 +154,16 @@ function Layout({ children }) {
       <main>
         {children}
       </main>
+
+      {/* Secret Mission Popup */}
+      {showSecretMission && (
+        <SecretMissionPopup 
+          onClose={() => {
+            console.log('Closing Secret Mission popup')
+            setShowSecretMission(false)
+          }} 
+        />
+      )}
     </div>
   )
 }
