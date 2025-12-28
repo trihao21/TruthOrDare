@@ -143,41 +143,41 @@ function AddQuestionPage() {
     const emptyRows = rows.filter(r => !r.content.trim())
     const rowsWithErrors = validatedRows.filter(r => r.errors.length > 0)
 
-    if (hasErrors || emptyRows.length > 0) {
-      let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
+    // if (hasErrors || emptyRows.length > 0) {
+    //   let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
      
-      // List specific validation errors
-      if (rowsWithErrors.length > 0) {
-        const errorTypes = new Set()
-        rowsWithErrors.forEach(row => {
-          row.errors.forEach(err => {
-            if (err.includes('vượt quá')) {
-              errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
-            } else if (err.includes('lặp lại ký tự')) {
-              errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
-            } else if (err.includes('để trống')) {
-              // Already handled above
-            }
-          })
-        })
+    //   // List specific validation errors
+    //   if (rowsWithErrors.length > 0) {
+    //     const errorTypes = new Set()
+    //     rowsWithErrors.forEach(row => {
+    //       row.errors.forEach(err => {
+    //         if (err.includes('vượt quá')) {
+    //           errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
+    //         } else if (err.includes('lặp lại ký tự')) {
+    //           errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
+    //         } else if (err.includes('để trống')) {
+    //           // Already handled above
+    //         }
+    //       })
+    //     })
         
-        if (errorTypes.size > 0) {
-          errorTypes.forEach(errType => {
-            errorMessage += `• ${errType}\n`
-          })
-        }
-      }
+    //     if (errorTypes.size > 0) {
+    //       errorTypes.forEach(errType => {
+    //         errorMessage += `• ${errType}\n`
+    //       })
+    //     }
+    //   }
       
-      // Show current valid count
-      const truthCount = validRows.filter(r => r.category === 'truth').length
-      const dareCount = validRows.filter(r => r.category === 'dare').length
-      errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
-      errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
+    //   // Show current valid count
+    //   const truthCount = validRows.filter(r => r.category === 'truth').length
+    //   const dareCount = validRows.filter(r => r.category === 'dare').length
+    //   errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
+    //   errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
       
-      setGlobalError(errorMessage)
-      setShowErrorModal(true)
-      return
-    }
+    //   setGlobalError(errorMessage)
+    //   setShowErrorModal(true)
+    //   return
+    // }
 
     // Count new questions to be added in current submission
     const newTruthCount = validRows.filter(r => r.category === 'truth').length
