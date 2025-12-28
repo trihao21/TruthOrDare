@@ -23,43 +23,58 @@ function HomePage({ questions, onQuestionsUpdate }) {
   }
 
   return (
-    <>
-      {screen === 'wheel' && (
-        <>
-          <WheelScreen
-            onSpinComplete={handleSpinComplete}
-          />
-          <TourGuide
-            tourName="home-wheel"
-            steps={[
-              {
-                target: '[data-tour="wheel-title"]',
-                content: 'Chào mừng bạn đến với trang chủ! Đây là vòng quay may mắn. Bạn sẽ quay để chọn một trong các loại: Truth (Sự thật), Dare (Thử thách), hoặc Cỏ 3 lá.',
-                allowClickOutside: false
-              },
-              {
-                target: '[data-tour="wheel-canvas"]',
-                content: 'Đây là vòng quay với các phần khác nhau. Mỗi phần tương ứng với một loại câu hỏi hoặc thử thách.',
-                allowClickOutside: false
-              },
-              {
-                target: '[data-tour="wheel-spin-button"]',
-                content: 'Nhấn nút "GO" ở giữa vòng quay để bắt đầu quay! Sau khi quay, bạn sẽ nhận được một loại câu hỏi hoặc thử thách tương ứng.',
-                allowClickOutside: false
-              }
-            ]}
-            onComplete={() => {}}
-            autoStart={!tourService.isTourCompleted('home-wheel')}
-          />
-        </>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Wheel Screen */}
+      <div 
+        className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+          screen === 'wheel' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+        }`}
+      >
+        <WheelScreen
+          onSpinComplete={handleSpinComplete}
+        />
+        <TourGuide
+          tourName="home-wheel"
+          steps={[
+            {
+              target: '[data-tour="wheel-title"]',
+              content: 'Chào mừng bạn đến với trang chủ! Đây là vòng quay may mắn. Bạn sẽ quay để chọn một trong các loại: Truth (Sự thật), Dare (Thử thách), hoặc Cỏ 3 lá.',
+              allowClickOutside: false
+            },
+            {
+              target: '[data-tour="wheel-canvas"]',
+              content: 'Đây là vòng quay với các phần khác nhau. Mỗi phần tương ứng với một loại câu hỏi hoặc thử thách.',
+              allowClickOutside: false
+            },
+            {
+              target: '[data-tour="wheel-spin-button"]',
+              content: 'Nhấn nút "GO" ở giữa vòng quay để bắt đầu quay! Sau khi quay, bạn sẽ nhận được một loại câu hỏi hoặc thử thách tương ứng.',
+              allowClickOutside: false
+            }
+          ]}
+          onComplete={() => {}}
+          autoStart={!tourService.isTourCompleted('home-wheel')}
+        />
+      </div>
+
+      {/* Result Screen */}
+      {selectedResult && (
+        <div 
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+            screen === 'result' ? 'opacity-100 z-20' : 'opacity-0 z-0 pointer-events-none'
+          }`}
+        >
+          <ResultScreen result={selectedResult} />
+        </div>
       )}
 
-      {screen === 'result' && selectedResult && (
-        <ResultScreen result={selectedResult} />
-      )}
-
-      {screen === 'cards' && selectedResult && (
-        <>
+      {/* Cards Screen */}
+      {selectedResult && (
+        <div 
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+            screen === 'cards' ? 'opacity-100 z-30' : 'opacity-0 z-0 pointer-events-none'
+          }`}
+        >
           <CardScreen
             result={selectedResult}
             questions={questions[selectedResult.label]}
@@ -82,9 +97,9 @@ function HomePage({ questions, onQuestionsUpdate }) {
             onComplete={() => {}}
             autoStart={!tourService.isTourCompleted('home-cards')}
           />
-        </>
+        </div>
       )}
-    </>
+    </div>
   )
 }
 

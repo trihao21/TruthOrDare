@@ -8,6 +8,8 @@ import ManagePage from './pages/ManagePage'
 import LoginPage from './pages/LoginPage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
+import TimelinePage from './pages/TimelinePage'
+import SummaryPage from './pages/SummaryPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -26,19 +28,19 @@ function App() {
     console.log('App useEffect triggered')
     let isMounted = true
     
-    // Set a maximum loading time to prevent infinite loading
+    // Set a maximum loading time to prevent infinite loading (increased for Render wake-up)
     const maxLoadingTimer = setTimeout(() => {
       if (isMounted) {
         console.warn('Loading timeout - rendering app anyway')
         setLoading(false)
-        setError('Không thể tải dữ liệu từ server. Ứng dụng sẽ hoạt động với dữ liệu mặc định.')
+        setError('Server lỏ nên hay bị lỗi. Mọi người bấm nút Thử lại bên dưới để reload nha!')
         setQuestions({
           'TRUTH': [],
           'DARE': [],
           'CỎ 3 LÁ': []
         })
       }
-    }, 8000) // 8 seconds max loading time
+    }, 35000) // 35 seconds max loading time (allows time for Render to wake up)
     
     initializeApp()
     
@@ -77,9 +79,9 @@ function App() {
       setLoading(true)
       setError(null)
       
-      // Add timeout to prevent hanging (increased to 10 seconds)
+      // Add timeout to prevent hanging (increased to 30 seconds for Render free tier wake-up)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - không thể kết nối đến server. Vui lòng kiểm tra server có đang chạy không.')), 10000)
+        setTimeout(() => reject(new Error('Request timeout - không thể kết nối đến server. Server có thể đang wake up (Render free tier). Vui lòng thử lại sau vài giây.')), 30000)
       )
       
       const response = await Promise.race([
@@ -162,19 +164,21 @@ function App() {
       {error && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
+          bottom: '20px',
+          right: '20px',
+          maxWidth: '400px',
           backgroundColor: '#fee2e2',
-          borderBottom: '2px solid #dc2626',
-          padding: '12px 20px',
+          border: '2px solid #dc2626',
+          borderRadius: '8px',
+          padding: '12px 16px',
           zIndex: 9999,
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontFamily: 'system-ui, -apple-system, sans-serif'
+          flexDirection: 'column',
+          gap: '10px',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
         }}>
-          <div style={{ color: '#dc2626', fontSize: '14px', flex: 1 }}>
+          <div style={{ color: '#dc2626', fontSize: '14px', lineHeight: '1.4' }}>
             ⚠️ {error}
           </div>
           <button
@@ -183,7 +187,7 @@ function App() {
               loadQuestions()
             }}
             style={{
-              marginLeft: '20px',
+              alignSelf: 'flex-end',
               padding: '6px 16px',
               backgroundColor: '#3b82f6',
               color: 'white',
@@ -220,6 +224,8 @@ function App() {
                 } 
               />
               <Route path="/add-question" element={<AddQuestionPage />} />
+              <Route path="/summary" element={<SummaryPage />} />
+              <Route path="/timeline" element={<TimelinePage />} />
               <Route 
                 path="/manage" 
                 element={
