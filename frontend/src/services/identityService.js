@@ -62,14 +62,37 @@ export const identityService = {
       if (response.success && response.identity) {
         // Save to localStorage as cache
         localStorage.setItem(STORAGE_KEY, JSON.stringify(response.identity))
-        return response.identity
+        
+        // Save account info if provided
+        if (response.account) {
+          localStorage.setItem('hipdam_account_info', JSON.stringify(response.account))
+        }
+        
+        return {
+          identity: response.identity,
+          account: response.account
+        }
       }
       
       throw new Error('Failed to assign identity')
     } catch (error) {
       console.error('Error drawing identity from backend:', error)
       // Fallback to local if backend fails
-      return this.drawRandomIdentityLocal()
+      const localIdentity = this.drawRandomIdentityLocal()
+      return {
+        identity: localIdentity,
+        account: null
+      }
+    }
+  },
+  
+  // Get account info from localStorage
+  getAccountInfo() {
+    try {
+      const accountInfo = localStorage.getItem('hipdam_account_info')
+      return accountInfo ? JSON.parse(accountInfo) : null
+    } catch {
+      return null
     }
   },
 
@@ -165,6 +188,12 @@ export const identityService = {
         if (response.identity) {
           // Cache in localStorage
           localStorage.setItem(STORAGE_KEY, JSON.stringify(response.identity))
+          
+          // Save account info if provided
+          if (response.account) {
+            localStorage.setItem('hipdam_account_info', JSON.stringify(response.account))
+          }
+          
           return response.identity
         }
         return null

@@ -10,6 +10,9 @@ function DrawPage() {
   const [showResult, setShowResult] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [identitiesStatus, setIdentitiesStatus] = useState([])
+  const [accountInfo, setAccountInfo] = useState(null)
+  const [copiedField, setCopiedField] = useState(null)
+  const [showAccountModal, setShowAccountModal] = useState(false)
 
   const handleNavigateToHome = useCallback(() => {
     // Clear manual logout flag
@@ -50,8 +53,10 @@ function DrawPage() {
   useEffect(() => {
     // First, check local storage immediately (synchronous) to show result right away
     const localExisting = identityService.getAssignedIdentity()
+    const localAccountInfo = identityService.getAccountInfo()
     if (localExisting) {
       setDrawnIdentity(localExisting)
+      setAccountInfo(localAccountInfo)
       setShowResult(true)
     }
     
@@ -64,6 +69,11 @@ function DrawPage() {
           if (!localExisting || localExisting.id !== existing.id) {
             setDrawnIdentity(existing)
             setShowResult(true)
+          }
+          // Always try to get account info (may be updated from backend)
+          const accountInfo = identityService.getAccountInfo()
+          if (accountInfo) {
+            setAccountInfo(accountInfo)
           }
         }
       } catch (error) {
@@ -89,10 +99,38 @@ function DrawPage() {
         const tempUsername = `user_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
         
         // Draw identity from backend
-        const selected = await identityService.drawRandomIdentity(tempUsername)
-        setDrawnIdentity(selected)
+        const result = await identityService.drawRandomIdentity(tempUsername)
+        console.log('Draw result:', result) // Debug log
+        
+        // Handle result - could be identity object or {identity, account} object
+        let identity = null
+        let account = null
+        
+        if (result.identity) {
+          identity = result.identity
+          account = result.account
+        } else {
+          identity = result
+          account = identityService.getAccountInfo()
+        }
+        
+        setDrawnIdentity(identity)
+        setAccountInfo(account)
         setShowResult(true)
         setIsDrawing(false)
+        
+        console.log('Account info:', account) // Debug log
+        
+        // Show account info modal if account info is available
+        // Use setTimeout to ensure state is set before showing modal
+        setTimeout(() => {
+          if (account && account.username && account.password) {
+            console.log('Showing account modal') // Debug log
+            setShowAccountModal(true)
+          } else {
+            console.log('Account info missing:', { account, hasUsername: account?.username, hasPassword: account?.password }) // Debug log
+          }
+        }, 100)
 
         // Status will be updated automatically by useEffect when drawnIdentity changes
         // No need to force update here to reduce server load
@@ -226,9 +264,67 @@ function DrawPage() {
                 >
                   {drawnIdentity.displayName}
                 </h2>
-                <p className="text-gray-600 text-lg sm:text-xl font-mono">
+                <p className="text-gray-600 text-lg sm:text-xl font-mono mb-6">
                   {drawnIdentity.id}
                 </p>
+                
+                {/* Account Info */}
+                {accountInfo && (
+                  <div className="mt-6 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-200">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">Thông tin tài khoản</h3>
+                    <div className="space-y-3">
+                      {/* Username */}
+                      <div className="bg-white rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Tên đăng nhập:</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={accountInfo.username}
+                            readOnly
+                            className="flex-1 font-mono text-lg font-bold text-gray-800 bg-transparent border-none outline-none"
+                          />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(accountInfo.username)
+                              setCopiedField('username')
+                              setTimeout(() => setCopiedField(null), 2000)
+                            }}
+                            className="px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                          >
+                            {copiedField === 'username' ? '✓ Đã copy' : '📋 Copy'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Password */}
+                      <div className="bg-white rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Mật khẩu:</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={accountInfo.password}
+                            readOnly
+                            className="flex-1 font-mono text-lg font-bold text-gray-800 bg-transparent border-none outline-none"
+                          />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(accountInfo.password)
+                              setCopiedField('password')
+                              setTimeout(() => setCopiedField(null), 2000)
+                            }}
+                            className="px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                          >
+                            {copiedField === 'password' ? '✓ Đã copy' : '📋 Copy'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-xs text-gray-500 text-center">
+                      ⚠️ Vui lòng lưu lại thông tin tài khoản này để đăng nhập sau
+                    </p>
+                  </div>
+                )}
+                
                 <div className="mt-4 px-4 py-2 bg-gray-100 rounded-lg inline-block">
                   <p className="text-sm text-gray-600">
                     Identity đã được lưu vào thiết bị này
@@ -298,6 +394,99 @@ function DrawPage() {
           </div>
         )}
       </div>
+
+      {/* Account Info Modal */}
+      {showAccountModal && accountInfo && accountInfo.username && accountInfo.password && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in">
+          <div className="bg-white border-2 border-purple-200 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-pop-in relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowAccountModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 font-bold text-lg hover:scale-110 active:scale-95"
+            >
+              ✕
+            </button>
+
+            {/* Icon */}
+            <div className="text-center mb-6">
+              <div className="relative inline-block mb-4">
+                <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">🔑</span>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-black mb-2 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
+                Thông tin tài khoản
+              </h2>
+              <p className="text-gray-600 text-sm">Vui lòng lưu lại thông tin này để đăng nhập sau</p>
+            </div>
+
+            {/* Account Info */}
+            <div className="space-y-4 mb-6">
+              {/* Username */}
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border-2 border-purple-200">
+                <label className="block text-sm font-medium text-gray-600 mb-2">Tên đăng nhập:</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={accountInfo.username}
+                    readOnly
+                    className="flex-1 font-mono text-lg font-bold text-gray-800 bg-white rounded-lg px-3 py-2 border border-gray-300"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(accountInfo.username)
+                      setCopiedField('username')
+                      setTimeout(() => setCopiedField(null), 2000)
+                    }}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    {copiedField === 'username' ? '✓ Đã copy' : '📋 Copy'}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Password */}
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border-2 border-purple-200">
+                <label className="block text-sm font-medium text-gray-600 mb-2">Mật khẩu:</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={accountInfo.password}
+                    readOnly
+                    className="flex-1 font-mono text-lg font-bold text-gray-800 bg-white rounded-lg px-3 py-2 border border-gray-300"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(accountInfo.password)
+                      setCopiedField('password')
+                      setTimeout(() => setCopiedField(null), 2000)
+                    }}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium whitespace-nowrap"
+                  >
+                    {copiedField === 'password' ? '✓ Đã copy' : '📋 Copy'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning */}
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 mb-6">
+              <p className="text-xs text-yellow-800 text-center">
+                ⚠️ <strong>Lưu ý:</strong> Mật khẩu này sẽ được tạo mới mỗi lần bốc thăm. Vui lòng lưu lại để đăng nhập ở thiết bị khác.
+              </p>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowAccountModal(false)}
+              className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

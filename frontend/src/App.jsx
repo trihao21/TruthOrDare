@@ -5,6 +5,8 @@ import RoleBasedRedirect from './components/RoleBasedRedirect'
 import HomePage from './pages/HomePage'
 import AddQuestionPage from './pages/AddQuestionPage'
 import DrawPage from './pages/DrawPage'
+import ChoicePage from './pages/ChoicePage'
+import LoginPage from './pages/LoginPage'
 import ManagePage from './pages/ManagePage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
@@ -204,7 +206,9 @@ function App() {
       
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
-        <Route path="/" element={<DrawPage />} />
+        <Route path="/" element={<ChoicePage />} />
+        <Route path="/draw" element={<DrawPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/add-question" element={<AddQuestionPage />} />
         <Route path="/mission-login" element={<MissionLoginPage />} />
         <Route path="/mission" element={<MissionPage />} />

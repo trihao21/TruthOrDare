@@ -1,4 +1,5 @@
 import IdentityAssignment from '../models/IdentityAssignment.js';
+import User from '../models/User.js';
 
 const IDENTITIES = [
   { id: 'player_1', avatar: '🔵', color: '#3B82F6', displayName: 'Người chơi 1' },
@@ -43,6 +44,10 @@ export const assignIdentity = async (req, res) => {
         identity: {
           ...identity,
           isNew: false
+        },
+        account: {
+          username: existing.username,
+          password: existing.password || '123456' // Fallback to default if password not set
         }
       });
     }
@@ -62,20 +67,77 @@ export const assignIdentity = async (req, res) => {
     const randomIndex = Math.floor(Math.random() * available.length);
     const selected = available[randomIndex];
 
-    // Create assignment
-    const assignment = new IdentityAssignment({
-      identityId: selected.id,
-      deviceId,
-      username: username || `device_${deviceId.substring(0, 8)}`
-    });
-
-    await assignment.save();
+    // Generate username from identity (e.g., player_1 -> player1)
+    const generatedUsername = selected.id.replace('_', '');
+    
+    // Generate random password (8-12 characters, alphanumeric + special chars)
+    const generatePassword = () => {
+      const length = 8 + Math.floor(Math.random() * 5); // 8-12 characters
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      return password;
+    };
+    
+    // Check if assignment already exists for this identity
+    let existingAssignment = await IdentityAssignment.findOne({ identityId: selected.id });
+    let passwordToUse = null;
+    
+    // Check if user account already exists
+    let userAccount = await User.findOne({ username: generatedUsername });
+    
+    if (existingAssignment && existingAssignment.password) {
+      // Identity already assigned - use existing password (password never changes)
+      passwordToUse = existingAssignment.password;
+      
+      // Update deviceId if different (same identity, different device)
+      existingAssignment.deviceId = deviceId;
+      await existingAssignment.save();
+    } else if (!userAccount) {
+      // New user - generate password only once
+      const generatedPassword = generatePassword();
+      passwordToUse = generatedPassword;
+      
+      // Create user account with generated password
+      userAccount = new User({
+        username: generatedUsername,
+        email: `${generatedUsername}@truthordare.local`, // Temporary email
+        password: generatedPassword, // Will be hashed by UserSchema pre-save hook
+        displayName: selected.displayName,
+        role: 'user'
+      });
+      await userAccount.save();
+      
+      // Create new assignment with password
+      existingAssignment = new IdentityAssignment({
+        identityId: selected.id,
+        deviceId,
+        username: generatedUsername,
+        password: generatedPassword // Store plain password for display (in production, consider encryption)
+      });
+      await existingAssignment.save();
+    } else {
+      // User exists but no assignment - this shouldn't happen in normal flow
+      // But if it does, we can't retrieve the original password (it's hashed)
+      // So we'll need to generate a new one and update the user
+      // However, user said password should not change, so this is an edge case
+      // For now, we'll use a fallback or throw an error
+      return res.status(500).json({ 
+        error: 'User account exists but no identity assignment found. Please contact administrator.' 
+      });
+    }
 
     res.json({
       success: true,
       identity: {
         ...selected,
-        isNew: true
+        isNew: !existingAssignment || existingAssignment.deviceId !== deviceId
+      },
+      account: {
+        username: generatedUsername,
+        password: passwordToUse
       }
     });
   } catch (error) {
@@ -133,7 +195,11 @@ export const getCurrentIdentity = async (req, res) => {
     const identity = IDENTITIES.find(id => id.id === assignment.identityId);
     res.json({
       success: true,
-      identity
+      identity,
+      account: {
+        username: assignment.username,
+        password: assignment.password || '123456' // Fallback to default if password not set
+      }
     });
   } catch (error) {
     console.error('Get current identity error:', error);

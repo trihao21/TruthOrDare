@@ -16,6 +16,10 @@ const IdentityAssignmentSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    password: {
+      type: String,
+      required: false // Will be generated when identity is assigned
+    },
     assignedAt: {
       type: Date,
       default: Date.now
