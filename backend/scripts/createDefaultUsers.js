@@ -60,6 +60,13 @@ const defaultUsers = [
     password: '123456',
     displayName: 'Người chơi 7',
     role: 'user'
+  },
+  {
+    username: 'player8',
+    email: 'player8@game.com',
+    password: '123456',
+    displayName: 'Người chơi 8',
+    role: 'user'
   }
 ];
 
@@ -97,6 +104,7 @@ async function createDefaultUsers() {
     console.log('👤 USER: Username: player5, Password: 123456');
     console.log('👤 USER: Username: player6, Password: 123456');
     console.log('👤 USER: Username: player7, Password: 123456');
+    console.log('👤 USER: Username: player8, Password: 123456');
 
   } catch (error) {
     console.error('Error creating default users:', error);

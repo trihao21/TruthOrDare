@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { questionService, authService, submittedQuestionsService } from '../services'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { questionService, authService } from '../services'
+import { identityService } from '../services/identityService'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
 
@@ -9,7 +10,11 @@ const generateId = () => Math.random().toString(36).substr(2, 9)
 
 function AddQuestionPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const scrollContainerRef = useRef(null)
+  
+  const isActive = (path) => location.pathname === path
+  
   const [rows, setRows] = useState([
     { id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }
   ])
@@ -18,11 +23,50 @@ function AddQuestionPage() {
   const [globalError, setGlobalError] = useState('')
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [userQuestionCounts, setUserQuestionCounts] = useState({ truth: 0, dare: 0 })
 
   const categories = [
     { id: 'truth', label: 'T', color: 'bg-blue-500', fullLabel: 'Sự thật' },
     { id: 'dare', label: 'D', color: 'bg-red-500', fullLabel: 'Thử thách' }
   ]
+
+  const MAX_QUESTIONS_PER_CATEGORY = 10
+
+  // Load user question counts on mount
+  useEffect(() => {
+    const loadUserQuestionCounts = async () => {
+      try {
+        const identity = identityService.getAssignedIdentity()
+        if (!identity) return
+
+        const username = identityService.getUsernameFromIdentity(identity)
+        if (!username) return
+
+        // Auto-login to get user info
+        const currentUser = authService.getCurrentUser()
+        if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
+          await authService.login(username, '123456')
+        }
+
+        const updatedUser = authService.getCurrentUser()
+        const userId = updatedUser?.id || updatedUser?._id
+        if (userId) {
+          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // userQuestions is now always an array (empty if API fails)
+          const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
+          const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
+          setUserQuestionCounts({ truth: truthCount, dare: dareCount })
+        }
+      } catch (error) {
+        console.error('Error loading user question counts:', error)
+        // Set to 0 if error - backend will still validate
+        setUserQuestionCounts({ truth: 0, dare: 0 })
+      }
+    }
+
+    loadUserQuestionCounts()
+  }, [])
 
   const handleAddRow = () => {
     setRows([...rows, { id: generateId(), content: '', category: 'truth', isNew: true, errors: [] }])
@@ -70,9 +114,10 @@ function AddQuestionPage() {
   }
 
   const handleSubmit = async () => {
-    // Check authentication
-    if (!authService.isAuthenticated()) {
-      setGlobalError('Bạn cần đăng nhập để thêm câu hỏi')
+    // Check identity (bốc thăm = đăng nhập)
+    const identity = identityService.getAssignedIdentity()
+    if (!identity) {
+      setGlobalError('Bạn cần bốc thăm identity trước khi thêm câu hỏi')
       setShowErrorModal(true)
       return
     }
@@ -90,14 +135,169 @@ function AddQuestionPage() {
     // Update rows with validation errors
     setRows(validatedRows)
 
-    if (hasErrors) {
-      setGlobalError('Vui lòng sửa các lỗi trước khi gửi')
+    // Check for empty rows and collect error details
+    const validRows = rows.filter(r => r.content.trim())
+    const emptyRows = rows.filter(r => !r.content.trim())
+    const rowsWithErrors = validatedRows.filter(r => r.errors.length > 0)
+
+    if (hasErrors || emptyRows.length > 0) {
+      let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
+     
+      // List specific validation errors
+      if (rowsWithErrors.length > 0) {
+        const errorTypes = new Set()
+        rowsWithErrors.forEach(row => {
+          row.errors.forEach(err => {
+            if (err.includes('vượt quá')) {
+              errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
+            } else if (err.includes('lặp lại ký tự')) {
+              errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
+            } else if (err.includes('để trống')) {
+              // Already handled above
+            }
+          })
+        })
+        
+        if (errorTypes.size > 0) {
+          errorTypes.forEach(errType => {
+            errorMessage += `• ${errType}\n`
+          })
+        }
+      }
+      
+      // Show current valid count
+      const truthCount = validRows.filter(r => r.category === 'truth').length
+      const dareCount = validRows.filter(r => r.category === 'dare').length
+      errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
+      errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
+      
+      setGlobalError(errorMessage)
       setShowErrorModal(true)
       return
     }
 
-    // Filter valid rows (non-empty content)
-    const validRows = validatedRows.filter(r => r.content.trim())
+    // Count new questions to be added in current submission
+    const newTruthCount = validRows.filter(r => r.category === 'truth').length
+    const newDareCount = validRows.filter(r => r.category === 'dare').length
+
+    // Check limit FIRST (before minimum requirements) - user cannot add more than 10 questions per category
+    let existingTruthCount = 0
+    let existingDareCount = 0
+    
+    try {
+      // Auto-login to get user info for limit check
+      const username = identityService.getUsernameFromIdentity(identity)
+      if (username) {
+        const currentUser = authService.getCurrentUser()
+        if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
+          await authService.login(username, '123456')
+        }
+        
+        const updatedUser = authService.getCurrentUser()
+        const userId = updatedUser?.id || updatedUser?._id
+        if (userId) {
+          // Get current question counts (already existing in database)
+          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // userQuestions is now always an array (empty if API fails)
+          existingTruthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
+          existingDareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
+          
+          const MAX_PER_CATEGORY = 10
+          
+          // Check limits - user cannot add more than 10 questions per category
+          if (existingTruthCount + newTruthCount > MAX_PER_CATEGORY) {
+            const exceeded = (existingTruthCount + newTruthCount) - MAX_PER_CATEGORY
+            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Truth. Hiện tại bạn đã có ${existingTruthCount} câu, và đang cố thêm ${newTruthCount} câu (vượt quá ${exceeded} câu).`)
+            setShowErrorModal(true)
+            return
+          }
+          
+          if (existingDareCount + newDareCount > MAX_PER_CATEGORY) {
+            const exceeded = (existingDareCount + newDareCount) - MAX_PER_CATEGORY
+            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Dare. Hiện tại bạn đã có ${existingDareCount} câu, và đang cố thêm ${newDareCount} câu (vượt quá ${exceeded} câu).`)
+            setShowErrorModal(true)
+            return
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking limits:', error)
+      // Continue anyway, backend will validate
+    }
+
+    // Check minimum requirements: total (existing + new) must have at least 10 truth and 10 dare
+    // If user already has 10 Truth + 10 Dare, skip minimum check
+    const MIN_REQUIRED = 10
+    const totalTruthCount = existingTruthCount + newTruthCount
+    const totalDareCount = existingDareCount + newDareCount
+    
+    // Only check minimum if user hasn't met the requirement yet
+    if (totalTruthCount < MIN_REQUIRED || totalDareCount < MIN_REQUIRED) {
+      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
+      
+      if (totalTruthCount < MIN_REQUIRED) {
+        const missingTruth = MIN_REQUIRED - totalTruthCount
+        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Truth (đã có: ${existingTruthCount}, thêm mới: ${newTruthCount}, tổng: ${totalTruthCount}, còn thiếu: ${missingTruth})\n`
+      } else {
+        errorMessage += `• Truth: ${totalTruthCount}/${MIN_REQUIRED} ✓\n`
+      }
+      
+      if (totalDareCount < MIN_REQUIRED) {
+        const missingDare = MIN_REQUIRED - totalDareCount
+        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Dare (đã có: ${existingDareCount}, thêm mới: ${newDareCount}, tổng: ${totalDareCount}, còn thiếu: ${missingDare})`
+      } else {
+        errorMessage += `• Dare: ${totalDareCount}/${MIN_REQUIRED} ✓`
+      }
+      
+      setGlobalError(errorMessage)
+      setShowErrorModal(true)
+      return
+    }
+
+    // Show confirmation modal
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmSubmit = async () => {
+    // Close confirmation modal
+    setShowConfirmModal(false)
+
+    // Check identity again
+    const identity = identityService.getAssignedIdentity()
+    if (!identity) {
+      setGlobalError('Bạn cần bốc thăm identity trước khi thêm câu hỏi')
+      setShowErrorModal(true)
+      return
+    }
+
+    // Auto-login with identity's account before submitting
+    try {
+      const username = identityService.getUsernameFromIdentity(identity)
+      if (!username) {
+        setGlobalError('Không thể xác định tài khoản từ identity. Vui lòng thử lại.')
+        setShowErrorModal(true)
+        return
+      }
+      
+      const password = '123456' // Default password for all player accounts
+      
+      // Check if already authenticated with the correct user
+      const currentUser = authService.getCurrentUser()
+      if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
+        // Clear manual logout flag when auto-login for submitting questions
+        identityService.clearManualLogout()
+        await authService.login(username, password)
+      }
+    } catch (error) {
+      console.error('Auto-login failed:', error)
+      setGlobalError(`Không thể đăng nhập với tài khoản ${identity.displayName}. Vui lòng thử lại.`)
+      setShowErrorModal(true)
+      return
+    }
+
+    // Filter valid rows (non-empty content) from current rows state
+    // Note: Minimum requirements (10 truth + 10 dare) already checked in handleSubmit
+    const validRows = rows.filter(r => r.content.trim())
 
     if (validRows.length === 0) {
       setGlobalError('Vui lòng nhập ít nhất một câu hỏi')
@@ -105,55 +305,61 @@ function AddQuestionPage() {
       return
     }
 
-    // Check minimum requirements: at least 10 truth and 10 dare
-    // Temporarily disabled for testing
-    /*
-    const truthCount = validRows.filter(r => r.category === 'truth').length
-    const dareCount = validRows.filter(r => r.category === 'dare').length
-
-    const missingTruth = 10 - truthCount
-    const missingDare = 10 - dareCount
-
-    if (truthCount < 10 || dareCount < 10) {
-      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
-      
-      if (truthCount < 10) {
-        errorMessage += `• Cần ít nhất 10 câu hỏi Truth (hiện tại: ${truthCount}, còn thiếu: ${missingTruth})\n`
-      } else {
-        errorMessage += `• Truth: ${truthCount}/10 ✓\n`
-      }
-      
-      if (dareCount < 10) {
-        errorMessage += `• Cần ít nhất 10 câu hỏi Dare (hiện tại: ${dareCount}, còn thiếu: ${missingDare})`
-      } else {
-        errorMessage += `• Dare: ${dareCount}/10 ✓`
-      }
-      
-      setGlobalError(errorMessage)
-      setShowErrorModal(true)
-      return
-    }
-    */
-
     setLoading(true)
     setGlobalError('')
     
     try {
-      // Submit all valid rows in parallel
+      // Submit all valid rows in parallel - Call API to send questions
+      console.log('Sending questions to API...', validRows.length, 'questions')
       const results = await Promise.all(
         validRows.map(row => questionService.addQuestion(row.category, row.content.trim()))
       )
+
+      console.log('API response:', results)
 
       // Check results and collect detailed errors
       const failedSubmissions = results.filter(result => !result.success)
       
       if (failedSubmissions.length > 0) {
         const errorMessages = failedSubmissions.map(result => result.error).join(', ')
-        throw new Error(`Không thể thêm một số câu hỏi: ${errorMessages}`)
+        // Check if error is about limit
+        if (errorMessages.includes('giới hạn') || errorMessages.includes('tối đa')) {
+          setGlobalError(errorMessages)
+        } else {
+          setGlobalError(`Không thể thêm một số câu hỏi: ${errorMessages}`)
+        }
+        setShowErrorModal(true)
+        // Reload counts after error
+        try {
+          const updatedUser = authService.getCurrentUser()
+          const userId = updatedUser?.id || updatedUser?._id
+          if (userId) {
+            const userQuestions = await questionService.getUserQuestions(userId.toString())
+            // userQuestions is now always an array (empty if API fails)
+            const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
+            const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
+            setUserQuestionCounts({ truth: truthCount, dare: dareCount })
+          }
+        } catch (countError) {
+          console.error('Error reloading counts:', countError)
+        }
+        return
       }
-
-      // Save submitted questions
-      submittedQuestionsService.add(validRows)
+      
+      // Reload counts after successful submission
+      try {
+        const updatedUser = authService.getCurrentUser()
+        const userId = updatedUser?.id || updatedUser?._id
+        if (userId) {
+          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // userQuestions is now always an array (empty if API fails)
+          const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
+          const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
+          setUserQuestionCounts({ truth: truthCount, dare: dareCount })
+        }
+      } catch (countError) {
+        console.error('Error reloading counts:', countError)
+      }
 
       // Show success message
       setShowSuccessModal(true)
@@ -161,7 +367,13 @@ function AddQuestionPage() {
       setRows([{ id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }])
     } catch (error) {
       console.error('Submit error:', error)
-      setGlobalError(error.message || 'Gửi câu hỏi thất bại. Vui lòng thử lại.')
+      // Check if error is about limit
+      const errorMessage = error.message || 'Gửi câu hỏi thất bại. Vui lòng thử lại.'
+      if (errorMessage.includes('giới hạn') || errorMessage.includes('tối đa')) {
+        setGlobalError(errorMessage)
+      } else {
+        setGlobalError(errorMessage)
+      }
       setShowErrorModal(true)
     } finally {
       setLoading(false)
@@ -172,50 +384,123 @@ function AddQuestionPage() {
     navigate('/')
   }
 
+  const identity = identityService.getAssignedIdentity()
+
   return (
-    <div className="fixed inset-0 h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] flex flex-col font-sans">
+      {/* Navbar - Same as Layout */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            {/* Logo */}
+            <Link 
+              to="/" 
+              className="flex items-center space-x-3 group"
+            >
+              <div className="relative w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <span className="text-white font-bold text-lg md:text-xl drop-shadow-lg">T</span>
+              </div>
+              <span className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                Truth or Dare
+              </span>
+            </Link>
 
-      {/* Back Button & Header */}
-      <div className="w-full max-w-2xl flex justify-between items-center mb-4 pt-2 relative">
-        <button
-          onClick={handleBack}
-          className="group relative z-10"
-        >
-          <div className="relative transform transition-transform active:scale-95 duration-150">
-            <div className="absolute inset-0 bg-gray-400 rounded-full translate-y-1"></div>
-           
-          </div>
-        </button>
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowInfo(true)}
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-        <h1 className="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 drop-shadow-sm absolute left-1/2 -translate-x-1/2 text-center w-full pointer-events-none">
-          Thêm Câu Hỏi
-        </h1>
+            
+            {/* Desktop Auth Section */}
+            <div className="hidden md:flex items-center space-x-2 md:space-x-3">
+               {/* Show add question link if user has identity */}
+               {identity && (
+                <>
+                  <Link 
+                    to="/add-question" 
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/add-question') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Thêm câu hỏi
+                  </Link>
+                  <Link 
+                    to="/summary" 
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/summary') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Câu hỏi của tôi
+                  </Link>
+                </>
+              )}
+              {/* Timeline button */}
+              <Link 
+                to="/timeline" 
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Timeline
+              </Link>
+              
+              {identity ? (
+                <>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="text-2xl">{identity.avatar}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {identity.displayName}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={async () => {
+                      await authService.logout()
+                      identityService.setManualLogout()
+                      navigate('/')
+                    }}
+                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Bốc thăm
+                </Link>
+              )}
 
-        {/* Info Button */}
-        <button
-          onClick={() => setShowInfo(true)}
-          className="group relative z-10"
-        >
-          <div className="relative transform transition-transform active:scale-95 duration-150">
-            <div className="absolute inset-0 bg-blue-400 rounded-full translate-y-1"></div>
-            <div className="relative bg-white border-2 border-blue-200 w-8 h-8 rounded-full font-black text-blue-500 flex items-center justify-center group-hover:-translate-y-0.5 transition-transform shadow-sm">
-              i
+              {/* Info Button */}
+             
             </div>
           </div>
-        </button>
-      </div>
+        </div>
+      </nav>
 
-      {/* Authentication Check */}
-      {!authService.isAuthenticated() && (
+      {/* Main Content */}
+      <div className="flex-1 p-4 flex flex-col items-center relative overflow-auto">
+        {/* Identity Check */}
+      {!identityService.hasIdentity() && (
         <div className="w-full max-w-3xl mb-4">
           <div className="bg-yellow-100/80 backdrop-blur-xl border border-yellow-400/50 text-yellow-700 px-4 py-3 rounded-2xl shadow-lg">
             <p className="text-sm font-medium text-center">
-              Bạn cần đăng nhập để thêm câu hỏi mới.{' '}
+              Bạn cần bốc thăm identity trước khi thêm câu hỏi.{' '}
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/')}
                 className="text-yellow-800 underline font-bold"
               >
-                Đăng nhập ngay
+                Bốc thăm ngay
               </button>
             </p>
           </div>
@@ -339,26 +624,59 @@ function AddQuestionPage() {
             ))}
 
             {/* Add Row Button - inside scrollable area, below last row */}
-            <button
-              onClick={handleAddRow}
-              className="w-full group relative"
-              data-tour="add-question-add-row"
-            >
-              <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
-              <div className="relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-gray-500 text-sm flex items-center justify-center gap-2 active:translate-y-1 transition-transform group-hover:border-purple-200 group-hover:text-purple-500">
-                <span className="text-lg font-black">+</span> Thêm dòng
-              </div>
-            </button>
+            {(() => {
+              const totalTruth = (userQuestionCounts.truth || 0) + rows.filter(r => r.category === 'truth' && r.content.trim()).length
+              const totalDare = (userQuestionCounts.dare || 0) + rows.filter(r => r.category === 'dare' && r.content.trim()).length
+              const isAtMaxLimit = totalTruth >= MAX_QUESTIONS_PER_CATEGORY && totalDare >= MAX_QUESTIONS_PER_CATEGORY
+              
+              return (
+                <button
+                  onClick={handleAddRow}
+                  disabled={isAtMaxLimit}
+                  className={`w-full group relative ${isAtMaxLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  data-tour="add-question-add-row"
+                  title={isAtMaxLimit ? 'Bạn đã đạt giới hạn tối đa 10 câu Truth và 10 câu Dare' : ''}
+                >
+                  <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
+                  <div className={`relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-transform ${
+                    isAtMaxLimit 
+                      ? 'text-gray-400' 
+                      : 'text-gray-500 active:translate-y-1 group-hover:border-purple-200 group-hover:text-purple-500'
+                  }`}>
+                    <span className="text-lg font-black">+</span> Thêm dòng
+                    {isAtMaxLimit && <span className="ml-2 text-xs">(Đã đạt giới hạn)</span>}
+                  </div>
+                </button>
+              )
+            })()}
           </div>
 
           {/* Summary Counts */}
-          <div className="flex justify-center gap-4 mb-4">
+          <div className="flex justify-center gap-4 mb-4 flex-wrap">
             {categories.map(cat => {
               const count = rows.filter(r => r.category === cat.id && r.content.trim()).length
-              if (count === 0) return null
+              const currentCount = userQuestionCounts[cat.id] || 0
+              const totalAfterAdd = currentCount + count
+              const isAtLimit = currentCount >= MAX_QUESTIONS_PER_CATEGORY
+              const willExceedLimit = totalAfterAdd > MAX_QUESTIONS_PER_CATEGORY
+              
+              // Always show badge for both Truth and Dare
               return (
-                <div key={cat.id} className={`px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-bold text-white ${cat.color} shadow-sm animate-fade-in`}>
-                  {cat.label}: {count}
+                <div 
+                  key={cat.id} 
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-bold text-white ${cat.color} shadow-sm animate-fade-in ${
+                    willExceedLimit ? 'ring-2 ring-red-500' : isAtLimit ? 'ring-2 ring-yellow-500' : ''
+                  }`}
+                  title={
+                    isAtLimit 
+                      ? `Đã đạt giới hạn ${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel}` 
+                      : willExceedLimit
+                      ? `Sẽ vượt quá giới hạn ${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel}`
+                      : `${totalAfterAdd}/${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel} (đã có: ${currentCount}, thêm mới: ${count})`
+                  }
+                >
+                  {cat.label}: {totalAfterAdd}/{MAX_QUESTIONS_PER_CATEGORY}
+                  {isAtLimit && <span className="ml-1">⚠️</span>}
                 </div>
               )
             })}
@@ -368,7 +686,7 @@ function AddQuestionPage() {
           <div className="pt-2 border-t border-white/30">
             <button
               onClick={handleSubmit}
-              disabled={loading || !authService.isAuthenticated()}
+              disabled={loading || !identityService.hasIdentity()}
               className="w-full group relative disabled:opacity-70 disabled:cursor-not-allowed"
               data-tour="add-question-submit"
             >
@@ -387,6 +705,91 @@ function AddQuestionPage() {
 
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
+          <div className="bg-white border-2 border-gray-200 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-pop-in relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 font-bold text-lg hover:scale-110 active:scale-95"
+            >
+              ✕
+            </button>
+
+            {/* Icon */}
+            <div className="text-center mb-6">
+              <div className="relative inline-block mb-4">
+                <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+                  <svg 
+                    className="w-12 h-12 text-white" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                    />
+                  </svg>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-black mb-2 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
+                Xác nhận gửi câu hỏi
+              </h2>
+              <p className="text-gray-600 text-sm">Bạn có chắc chắn muốn gửi các câu hỏi này không?</p>
+            </div>
+
+            {/* Question Count */}
+            <div className="mb-6">
+              <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-4 rounded-2xl border-2 border-purple-200/50">
+                <div className="space-y-2">
+                  {categories.map(cat => {
+                    const count = rows.filter(r => r.category === cat.id && r.content.trim()).length
+                    if (count === 0) return null
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">{cat.fullLabel}:</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${cat.color} shadow-sm`}>
+                          {count} câu
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-3 pt-3 border-t border-purple-200/50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-800">Tổng cộng:</span>
+                    <span className="px-3 py-1 rounded-full text-sm font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500 shadow-sm">
+                      {rows.filter(r => r.content.trim()).length} câu
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmSubmit}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Modal */}
       {showErrorModal && globalError && (
@@ -557,13 +960,10 @@ function AddQuestionPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="text-center space-y-2">
+            {/* Action Button */}
+            <div className="text-center">
               <button
-                onClick={() => {
-                  setShowSuccessModal(false)
-                  navigate('/summary')
-                }}
+                onClick={() => setShowSuccessModal(false)}
                 className="group relative w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden"
               >
                 {/* Button Glow */}
@@ -571,7 +971,7 @@ function AddQuestionPage() {
                 
                 {/* Button Content */}
                 <span className="relative flex items-center justify-center gap-2">
-                  <span>Xem tóm tắt</span>
+                  <span>Đã hiểu</span>
                   <svg 
                     className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
                     fill="none" 
@@ -582,20 +982,15 @@ function AddQuestionPage() {
                   </svg>
                 </span>
               </button>
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="w-full bg-gray-200 text-gray-700 font-medium py-2.5 px-8 rounded-xl hover:bg-gray-300 transition-all duration-300"
-              >
-                Đóng
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Decorative Background Elements */}
-      <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none"></div>
-      <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none"></div>
+        {/* Decorative Background Elements */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none"></div>
+      </div>
 
       {/* Tour Guide */}
       <TourGuide
@@ -618,7 +1013,7 @@ function AddQuestionPage() {
           },
           {
             target: '[data-tour="add-question-submit"]',
-            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần đăng nhập để thêm câu hỏi.',
+            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần bốc thăm identity để thêm câu hỏi.',
             allowClickOutside: false
           }
         ]}

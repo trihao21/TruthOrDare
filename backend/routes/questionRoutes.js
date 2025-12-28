@@ -2,6 +2,7 @@ import express from 'express';
 import {
     getAllQuestions,
     getQuestionsByCategory,
+    getUserQuestions,
     addQuestion,
     deleteQuestion,
     seedDefaultQuestions
@@ -16,6 +17,7 @@ router.post('/seed/default', seedDefaultQuestions);
 
 // Public routes - anyone can view questions
 router.get('/', getAllQuestions);
+router.get('/user/:userId', getUserQuestions);
 router.get('/:category', getQuestionsByCategory);
 
 // Protected routes - must be authenticated

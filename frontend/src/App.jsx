@@ -4,8 +4,10 @@ import Layout from './components/Layout'
 import RoleBasedRedirect from './components/RoleBasedRedirect'
 import HomePage from './pages/HomePage'
 import AddQuestionPage from './pages/AddQuestionPage'
-import ManagePage from './pages/ManagePage'
+import DrawPage from './pages/DrawPage'
+import ChoicePage from './pages/ChoicePage'
 import LoginPage from './pages/LoginPage'
+import ManagePage from './pages/ManagePage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
 import TimelinePage from './pages/TimelinePage'
@@ -204,7 +206,10 @@ function App() {
       
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
+        <Route path="/" element={<ChoicePage />} />
+        <Route path="/draw" element={<DrawPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/add-question" element={<AddQuestionPage />} />
         <Route path="/mission-login" element={<MissionLoginPage />} />
         <Route path="/mission" element={<MissionPage />} />
         
@@ -212,20 +217,8 @@ function App() {
         <Route path="/*" element={
           <Layout>
             <Routes>
-              <Route 
-                path="/" 
-                element={
-                  <RoleBasedRedirect>
-                    <HomePage 
-                      questions={questions} 
-                      onQuestionsUpdate={loadQuestions} 
-                    />
-                  </RoleBasedRedirect>
-                } 
-              />
-              <Route path="/add-question" element={<AddQuestionPage />} />
-              <Route path="/summary" element={<SummaryPage />} />
               <Route path="/timeline" element={<TimelinePage />} />
+              <Route path="/summary" element={<SummaryPage />} />
               <Route 
                 path="/manage" 
                 element={

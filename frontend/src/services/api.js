@@ -30,14 +30,28 @@ const tokenManager = {
   }
 };
 
+// Get device ID from localStorage
+const getDeviceId = () => {
+  const deviceId = localStorage.getItem('hipdam_device_id')
+  if (!deviceId) {
+    // Generate unique device ID
+    const newDeviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${navigator.userAgent.substring(0, 20).replace(/\s/g, '_')}`
+    localStorage.setItem('hipdam_device_id', newDeviceId)
+    return newDeviceId
+  }
+  return deviceId
+}
+
 // HTTP client with auth headers
 const httpClient = {
   async request(url, options = {}) {
     const token = tokenManager.getToken();
+    const deviceId = getDeviceId();
     
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        'X-Device-ID': deviceId, // Send device ID in header
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
@@ -57,8 +71,14 @@ const httpClient = {
       }
       
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Lỗi kết nối mạng' }));
-        throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -139,6 +159,10 @@ export const api = {
     return httpClient.get(`/questions/${category}`);
   },
 
+  async getUserQuestions(userId) {
+    return httpClient.get(`/questions/user/${userId}`);
+  },
+
   async addQuestion(category, content) {
     return httpClient.post('/questions', { category, content });
   },
@@ -158,6 +182,25 @@ export const api = {
 
   async deleteUser(id) {
     return httpClient.delete(`/users/${id}`);
+  },
+
+  // Identity API
+  async assignIdentity(username) {
+    return httpClient.post('/identities/assign', { username });
+  },
+
+  async getIdentitiesStatus() {
+    const response = await httpClient.get('/identities/status');
+    console.log('Identities status from backend:', response);
+    return response;
+  },
+
+  async getCurrentIdentity() {
+    return httpClient.get('/identities/current');
+  },
+
+  async resetAllIdentities() {
+    return httpClient.delete('/identities/reset');
   },
 
   // Utility methods

@@ -31,6 +31,23 @@ export const getQuestionsByCategory = async (req, res) => {
     }
 };
 
+// Get questions by user ID
+export const getUserQuestions = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        // Query with both string and ObjectId format to handle both cases
+        const questions = await Question.find({ 
+            $or: [
+                { userId: userId },
+                { userId: userId.toString() }
+            ]
+        }).sort({ createdAt: -1 });
+        res.json(questions);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Add new question
 export const addQuestion = async (req, res) => {
     try {
@@ -55,9 +72,29 @@ export const addQuestion = async (req, res) => {
         }
 
         // Use authenticated user's ID from JWT token
+        // Convert to string to ensure consistent format
+        const userIdString = req.userId ? req.userId.toString() : req.userId;
+        
+        // Check limit: max 10 questions per category per user
+        const MAX_QUESTIONS_PER_CATEGORY = 10;
+        const currentType = finalType.toLowerCase();
+        
+        // Count existing questions of this type for this user
+        const existingCount = await Question.countDocuments({ 
+            userId: userIdString,
+            type: currentType
+        });
+        
+        if (existingCount >= MAX_QUESTIONS_PER_CATEGORY) {
+            const categoryName = currentType === 'truth' ? 'Truth' : currentType === 'dare' ? 'Dare' : 'Lucky';
+            return res.status(400).json({ 
+                error: `Bạn đã đạt giới hạn tối đa ${MAX_QUESTIONS_PER_CATEGORY} câu hỏi ${categoryName}. Vui lòng xóa một số câu hỏi cũ để thêm mới.` 
+            });
+        }
+        
         const question = new Question({
-            userId: req.userId, // From authenticate middleware
-            type: finalType.toLowerCase(),
+            userId: userIdString, // From authenticate middleware, converted to string
+            type: currentType,
             content
         });
         await question.save();

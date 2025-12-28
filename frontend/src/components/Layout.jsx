@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { authService, submittedQuestionsService } from '../services'
+import { useState } from 'react'
+import { authService } from '../services'
+import { identityService } from '../services/identityService'
 
 function Layout({ children }) {
   const navigate = useNavigate()
@@ -8,23 +9,13 @@ function Layout({ children }) {
   const currentUser = authService.getCurrentUser()
   const isAuthenticated = authService.isAuthenticated()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [hasSubmittedQuestions, setHasSubmittedQuestions] = useState(false)
 
   const isActive = (path) => location.pathname === path
 
-  useEffect(() => {
-    const checkSubmittedQuestions = () => {
-      const submissions = submittedQuestionsService.getAll()
-      setHasSubmittedQuestions(submissions.length > 0)
-    }
-    checkSubmittedQuestions()
-    // Check periodically in case submissions are added from another tab
-    const interval = setInterval(checkSubmittedQuestions, 1000)
-    return () => clearInterval(interval)
-  }, [])
-
   const handleLogout = async () => {
     await authService.logout()
+    // Mark manual logout to prevent auto-login
+    identityService.setManualLogout()
     navigate('/')
     setMobileMenuOpen(false)
   }
@@ -79,19 +70,8 @@ function Layout({ children }) {
                 </Link>
               )}
               
-              {/* Only show add question link for admin */}
-              {isAuthenticated && currentUser?.role === 'admin' && (
-                <Link 
-                  to="/add-question" 
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive('/add-question') 
-                      ? 'text-purple-600 bg-purple-50 font-semibold' 
-                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                  }`}
-                >
-                  Thêm câu hỏi
-                </Link>
-              )}
+              {/* Show add question link if user has identity (not just admin) */}
+             
               
               {/* Only show manage link for admin */}
               {isAuthenticated && currentUser?.role === 'admin' && (
@@ -110,52 +90,68 @@ function Layout({ children }) {
 
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center space-x-2 md:space-x-3">
-              {isAuthenticated ? (
-                <>
-                  {/* Timeline button - visible to all authenticated users */}
-                  <Link 
-                    to="/timeline" 
-                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                  >
-                    Timeline
-                  </Link>
-                  
-                  {/* Summary button - only show if user has submitted questions */}
-                  {hasSubmittedQuestions && (
+            {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity && (
+                  <>
                     <Link 
-                      to="/summary" 
-                      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                        isActive('/summary')
-                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                          : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                      to="/add-question" 
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/add-question') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
                       }`}
                     >
-                      Tóm tắt
+                      Thêm câu hỏi
                     </Link>
-                  )}
-                  
-                  <div className="hidden sm:flex items-center gap-2">
-                    <span className="text-sm">{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {currentUser?.displayName || currentUser?.username}
-                    </span>
-                  </div>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                    <Link 
+                      to="/summary" 
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/summary') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Câu hỏi của tôi
+                    </Link>
+                  </>
+                )
+              })()}
+              {/* Timeline button */}
+              <Link 
+                to="/timeline" 
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Timeline
+              </Link>
+              
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity ? (
+                  <>
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="text-2xl">{identity.avatar}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {identity.displayName}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/"
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
                   >
-                    Đăng xuất
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  Đăng nhập
-                </Link>
-              )}
+                    Bốc thăm
+                  </Link>
+                )
+              })()}
             </div>
           </div>
 
@@ -176,19 +172,35 @@ function Layout({ children }) {
                 </Link>
               )}
               
-              {isAuthenticated && currentUser?.role === 'admin' && (
-                <Link 
-                  to="/add-question" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive('/add-question') 
-                      ? 'text-purple-600 bg-purple-50 font-semibold' 
-                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                  }`}
-                >
-                  Thêm câu hỏi
-                </Link>
-              )}
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity && (
+                  <>
+                    <Link 
+                      to="/add-question" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/add-question') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Thêm câu hỏi
+                    </Link>
+                    <Link 
+                      to="/summary" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/summary') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Câu hỏi của tôi
+                    </Link>
+                  </>
+                )
+              })()}
               
               {isAuthenticated && (
                 <Link 
@@ -197,20 +209,6 @@ function Layout({ children }) {
                   className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
                 >
                   Timeline
-                </Link>
-              )}
-              
-              {isAuthenticated && hasSubmittedQuestions && (
-                <Link 
-                  to="/summary" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-center ${
-                    isActive('/summary')
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
-                  }`}
-                >
-                  Tóm tắt
                 </Link>
               )}
               
@@ -228,35 +226,36 @@ function Layout({ children }) {
                 </Link>
               )}
 
-              {isAuthenticated && (
-                <div className="pt-2 border-t border-gray-200 space-y-2">
-                  <div className="px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <span>{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {currentUser?.displayName || currentUser?.username}
-                      </span>
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity ? (
+                  <div className="pt-2 border-t border-gray-200 space-y-2">
+                    <div className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{identity.avatar}</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {identity.displayName}
+                        </span>
+                      </div>
                     </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                    >
+                      Đăng xuất
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                ) : (
+                  <Link
+                    to="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
                   >
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-
-              {!isAuthenticated && (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
-                >
-                  Đăng nhập
-                </Link>
-              )}
+                    Bốc thăm
+                  </Link>
+                )
+              })()}
             </div>
           )}
         </div>
