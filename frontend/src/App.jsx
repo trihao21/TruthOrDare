@@ -27,19 +27,19 @@ function App() {
     console.log('App useEffect triggered')
     let isMounted = true
     
-    // Set a maximum loading time to prevent infinite loading
+    // Set a maximum loading time to prevent infinite loading (increased for Render wake-up)
     const maxLoadingTimer = setTimeout(() => {
       if (isMounted) {
         console.warn('Loading timeout - rendering app anyway')
         setLoading(false)
-        setError('Không thể tải dữ liệu từ server. Ứng dụng sẽ hoạt động với dữ liệu mặc định.')
+        setError('Không thể tải dữ liệu từ server. Server có thể đang wake up (Render free tier). Ứng dụng sẽ hoạt động với dữ liệu mặc định. Vui lòng thử lại sau vài giây.')
         setQuestions({
           'TRUTH': [],
           'DARE': [],
           'CỎ 3 LÁ': []
         })
       }
-    }, 8000) // 8 seconds max loading time
+    }, 35000) // 35 seconds max loading time (allows time for Render to wake up)
     
     initializeApp()
     
@@ -78,9 +78,9 @@ function App() {
       setLoading(true)
       setError(null)
       
-      // Add timeout to prevent hanging (increased to 10 seconds)
+      // Add timeout to prevent hanging (increased to 30 seconds for Render free tier wake-up)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - không thể kết nối đến server. Vui lòng kiểm tra server có đang chạy không.')), 10000)
+        setTimeout(() => reject(new Error('Request timeout - không thể kết nối đến server. Server có thể đang wake up (Render free tier). Vui lòng thử lại sau vài giây.')), 30000)
       )
       
       const response = await Promise.race([

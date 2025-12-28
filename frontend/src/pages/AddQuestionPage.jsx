@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { questionService, authService } from '../services'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
-import SecretMissionPopup from '../components/SecretMissionPopup'
 
 // Helper for generating unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9)
@@ -15,10 +14,10 @@ function AddQuestionPage() {
     { id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }
   ])
   const [loading, setLoading] = useState(false)
-  const [showSecretMission, setShowSecretMission] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
   const [globalError, setGlobalError] = useState('')
   const [showErrorModal, setShowErrorModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const categories = [
     { id: 'truth', label: 'T', color: 'bg-blue-500', fullLabel: 'Sự thật' },
@@ -153,8 +152,8 @@ function AddQuestionPage() {
         throw new Error(`Không thể thêm một số câu hỏi: ${errorMessages}`)
       }
 
-      // Show secret mission popup instead of success
-      setShowSecretMission(true)
+      // Show success message
+      setShowSuccessModal(true)
       // Reset to one empty row
       setRows([{ id: generateId(), content: '', category: 'truth', isNew: false, errors: [] }])
     } catch (error) {
@@ -388,7 +387,7 @@ function AddQuestionPage() {
 
       {/* Error Modal */}
       {showErrorModal && globalError && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
           <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[2rem] p-6 max-w-md w-full shadow-2xl animate-pop-in relative">
             {/* Close Button */}
             <button
@@ -429,7 +428,7 @@ function AddQuestionPage() {
 
       {/* Info Modal */}
       {showInfo && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-fade-in">
           <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[2rem] p-6 max-w-md w-full shadow-2xl animate-pop-in relative">
             {/* Close Button */}
             <button
@@ -485,9 +484,101 @@ function AddQuestionPage() {
         </div>
       )}
 
-      {/* Secret Mission Popup */}
-      {showSecretMission && (
-        <SecretMissionPopup onClose={() => setShowSecretMission(false)} />
+      {/* Success Modal - Enhanced UI/UX */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-fade-in">
+          {/* Confetti Effect */}
+          <div className="absolute inset-0 pointer-events-none animate-confetti"></div>
+          
+          <div className="bg-white border-2 border-gray-200 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-bounce-in relative overflow-hidden">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 font-bold text-lg hover:scale-110 active:scale-95"
+            >
+              ✕
+            </button>
+
+            {/* Success Icon with Animation */}
+            <div className="text-center mb-6">
+              <div className="relative inline-block mb-4">
+                {/* Glow Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 rounded-full blur-2xl opacity-50 animate-pulse-slow"></div>
+                {/* Icon Container */}
+                <div className="relative w-20 h-20 mx-auto bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-500 hover:scale-110">
+                  <svg 
+                    className="w-12 h-12 text-white animate-fade-in-scale" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={3} 
+                      d="M5 13l4 4L19 7" 
+                    />
+                  </svg>
+                </div>
+                {/* Floating Particles */}
+                <div className="absolute -top-2 -right-2 w-3 h-3 bg-purple-400 rounded-full animate-float opacity-80"></div>
+                <div className="absolute -bottom-2 -left-2 w-2 h-2 bg-pink-400 rounded-full animate-float opacity-60" style={{ animationDelay: '0.5s' }}></div>
+                <div className="absolute top-1/2 -right-4 w-2.5 h-2.5 bg-indigo-400 rounded-full animate-float opacity-70" style={{ animationDelay: '1s' }}></div>
+              </div>
+              
+              <h2 className="text-3xl font-black mb-2 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent">
+                Thành công!
+              </h2>
+              <p className="text-gray-500 text-sm">Câu hỏi của bạn đã được gửi</p>
+            </div>
+
+            {/* Success Message Card */}
+            <div className="mb-6 relative">
+              <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-5 rounded-2xl border-2 border-purple-200/50 shadow-inner relative overflow-hidden">
+                {/* Decorative Pattern */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full -mr-16 -mt-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-pink-200/20 rounded-full -ml-12 -mb-12"></div>
+                
+                <div className="relative">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
+                      <span className="text-xl">🎉</span>
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-gray-800">Quá đã quá đã!</p>
+                      <p className="text-xs text-gray-600 mt-0.5">Chuẩn bị tinh thần hôm đó thả gas nha!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="text-center">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="group relative w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden"
+              >
+                {/* Button Glow */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Button Content */}
+                <span className="relative flex items-center justify-center gap-2">
+                  <span>Đã hiểu</span>
+                  <svg 
+                    className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Decorative Background Elements */}

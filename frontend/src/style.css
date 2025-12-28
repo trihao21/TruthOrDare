@@ -568,15 +568,41 @@ textarea.multiline-textarea {
   }
 }
 
-@keyframes confetti {
+/* Confetti Animation */
+@keyframes confetti-fall {
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(-100vh) rotate(0deg) translateX(0);
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) rotate(720deg);
+    transform: translateY(100vh) rotate(720deg) translateX(100px);
     opacity: 0;
   }
+}
+
+.animate-confetti {
+  position: relative;
+  overflow: visible;
+}
+
+.animate-confetti::before {
+  content: '🎉';
+  position: absolute;
+  top: -50px;
+  left: 10%;
+  font-size: 20px;
+  animation: confetti-fall 2s ease-out infinite;
+  z-index: 1;
+}
+
+.animate-confetti::after {
+  content: '✨';
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  font-size: 16px;
+  animation: confetti-fall 2.5s ease-out 0.3s infinite;
+  z-index: 1;
 }
 
 @keyframes fade-in-down {
