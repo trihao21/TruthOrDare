@@ -3,17 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { authService, utilService } from '../services'
 import TourGuide from '../components/TourGuide'
 
-const defaultAccounts = [
-  { username: 'admin', displayName: 'Quản trị viên', role: 'admin', password: 'admin123' },
-  { username: 'player1', displayName: 'Người chơi 1', role: 'user', password: '123456' },
-  { username: 'player2', displayName: 'Người chơi 2', role: 'user', password: '123456' },
-  { username: 'player3', displayName: 'Người chơi 3', role: 'user', password: '123456' },
-  { username: 'player4', displayName: 'Người chơi 4', role: 'user', password: '123456' },
-  { username: 'player5', displayName: 'Người chơi 5', role: 'user', password: '123456' },
-  { username: 'player6', displayName: 'Người chơi 6', role: 'user', password: '123456' },
-  { username: 'player7', displayName: 'Người chơi 7', role: 'user', password: '123456' }
-]
-
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -33,11 +22,6 @@ function LoginPage() {
     }))
     
     if (error) setError('')
-  }
-
-  const handleQuickLogin = async (username, password) => {
-    setFormData({ username, password })
-    await handleLogin(username, password)
   }
 
   const handleLogin = async (username, password) => {
@@ -75,66 +59,14 @@ function LoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Chọn Người Chơi
+            Đăng nhập
           </h1>
           <p className="text-gray-600">
-            Chọn tài khoản có sẵn hoặc đăng nhập thủ công
+            Nhập thông tin tài khoản để đăng nhập
           </p>
         </div>
 
-        {/* Quick Login Buttons */}
-        <div className="mb-6" data-tour="login-quick-accounts">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Tài khoản có sẵn:</h3>
-          <div className="space-y-2">
-            {/* Admin Account */}
-            <button
-              onClick={() => handleQuickLogin(defaultAccounts[0].username, defaultAccounts[0].password)}
-              disabled={loading}
-              className="w-full p-3 bg-gradient-to-r from-red-100 to-orange-100 hover:from-red-200 hover:to-orange-200 rounded-lg border-2 border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              data-tour="login-admin-button"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-red-700">👑 {defaultAccounts[0].displayName}</div>
-                  <div className="text-xs text-red-500">@{defaultAccounts[0].username} (ADMIN)</div>
-                </div>
-                <div className="text-xs text-red-600 font-mono bg-red-50 px-2 py-1 rounded">
-                  {defaultAccounts[0].password}
-                </div>
-              </div>
-            </button>
-            
-            {/* User Accounts */}
-            <div className="grid grid-cols-2 gap-2">
-              {defaultAccounts.slice(1).map((account) => (
-                <button
-                  key={account.username}
-                  onClick={() => handleQuickLogin(account.username, account.password)}
-                  disabled={loading}
-                  className="p-3 bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 rounded-lg border border-purple-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="text-sm font-bold text-purple-700">{account.displayName}</div>
-                  <div className="text-xs text-purple-500">@{account.username}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="text-xs text-gray-500 mt-2 text-center">
-            User accounts password: <span className="font-mono bg-gray-100 px-1 rounded">123456</span>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Hoặc đăng nhập thủ công</span>
-          </div>
-        </div>
-
-        {/* Manual Login Form */}
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4" data-tour="login-form">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -201,18 +133,13 @@ function LoginPage() {
         tourName="login"
         steps={[
           {
-            target: '[data-tour="login-quick-accounts"]',
-            content: 'Chào mừng bạn đến với Hipdam! Đây là các tài khoản có sẵn. Bạn có thể chọn một tài khoản để đăng nhập nhanh, hoặc đăng nhập thủ công ở bên dưới.',
-            allowClickOutside: false
-          },
-          {
             target: '[data-tour="login-form"]',
-            content: 'Nếu bạn muốn đăng nhập thủ công, hãy nhập tên đăng nhập và mật khẩu vào đây. Hoặc bạn có thể sử dụng các tài khoản có sẵn ở trên.',
+            content: 'Nhập tên đăng nhập và mật khẩu của bạn để đăng nhập vào hệ thống.',
             allowClickOutside: false
           },
           {
             target: '[data-tour="login-submit-button"]',
-            content: 'Sau khi nhập đầy đủ thông tin, nhấn nút "Đăng nhập" để bắt đầu trải nghiệm. Sau khi đăng nhập, bạn sẽ được chuyển đến trang chủ để quay vòng quay!',
+            content: 'Sau khi nhập đầy đủ thông tin, nhấn nút "Đăng nhập" để bắt đầu trải nghiệm.',
             allowClickOutside: false
           }
         ]}
