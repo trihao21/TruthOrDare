@@ -16,7 +16,7 @@ function TimelinePage() {
     {
       id: 2,
       title: 'Đi ăn',
-      description: 'Tiếp tục với bữa ăn ngon tại nhà hàng. Thưởng thức những món ăn tuyệt vời và trò chuyện vui vẻ!',
+      description: 'Tiếp tục với bữa ăn ngon. Thưởng thức những món ăn tuyệt vời và trò chuyện vui vẻ!',
       image: '/timeline-2.jpg',
       date: '2025-01-21',
       time: '19:00',
