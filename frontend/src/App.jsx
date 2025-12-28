@@ -204,6 +204,7 @@ function App() {
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
         <Route path="/" element={<DrawPage />} />
+        <Route path="/add-question" element={<AddQuestionPage />} />
         <Route path="/mission-login" element={<MissionLoginPage />} />
         <Route path="/mission" element={<MissionPage />} />
         
@@ -211,7 +212,6 @@ function App() {
         <Route path="/*" element={
           <Layout>
             <Routes>
-              <Route path="/add-question" element={<AddQuestionPage />} />
               <Route path="/timeline" element={<TimelinePage />} />
               <Route 
                 path="/manage" 

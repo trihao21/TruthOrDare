@@ -70,19 +70,8 @@ function Layout({ children }) {
                 </Link>
               )}
               
-              {/* Only show add question link for admin */}
-              {isAuthenticated && currentUser?.role === 'admin' && (
-                <Link 
-                  to="/add-question" 
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive('/add-question') 
-                      ? 'text-purple-600 bg-purple-50 font-semibold' 
-                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                  }`}
-                >
-                  Thêm câu hỏi
-                </Link>
-              )}
+              {/* Show add question link if user has identity (not just admin) */}
+             
               
               {/* Only show manage link for admin */}
               {isAuthenticated && currentUser?.role === 'admin' && (
@@ -101,6 +90,22 @@ function Layout({ children }) {
 
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center space-x-2 md:space-x-3">
+
+            {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity && (
+                  <Link 
+                    to="/add-question" 
+                    className={`px-4 py-2 border border-purple-500 rounded-lg text-sm font-medium transition-all  duration-200 ${
+                      isActive('/add-question') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-purple-600 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Thêm câu hỏi
+                  </Link>
+                )
+              })()}
               {/* Timeline button */}
               <Link 
                 to="/timeline" 
@@ -156,19 +161,22 @@ function Layout({ children }) {
                 </Link>
               )}
               
-              {isAuthenticated && currentUser?.role === 'admin' && (
-                <Link 
-                  to="/add-question" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive('/add-question') 
-                      ? 'text-purple-600 bg-purple-50 font-semibold' 
-                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                  }`}
-                >
-                  Thêm câu hỏi
-                </Link>
-              )}
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity && (
+                  <Link 
+                    to="/add-question" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/add-question') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Thêm câu hỏi
+                  </Link>
+                )
+              })()}
               
               {isAuthenticated && (
                 <Link 

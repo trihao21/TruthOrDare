@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { questionService, authService } from '../services'
 import { identityService } from '../services/identityService'
 import TourGuide from '../components/TourGuide'
@@ -196,40 +196,109 @@ function AddQuestionPage() {
     navigate('/')
   }
 
+  const identity = identityService.getAssignedIdentity()
+
   return (
-    <div className="fixed inset-0 h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] flex flex-col font-sans">
+      {/* Navbar - Same as Layout */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            {/* Logo */}
+            <Link 
+              to="/" 
+              className="flex items-center space-x-3 group"
+            >
+              <div className="relative w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <span className="text-white font-bold text-lg md:text-xl drop-shadow-lg">T</span>
+              </div>
+              <span className="text-lg md:text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                Truth or Dare
+              </span>
+            </Link>
 
-      {/* Back Button & Header */}
-      <div className="w-full max-w-2xl flex justify-between items-center mb-4 pt-2 relative">
-        <button
-          onClick={handleBack}
-          className="group relative z-10"
-        >
-          <div className="relative transform transition-transform active:scale-95 duration-150">
-            <div className="absolute inset-0 bg-gray-400 rounded-full translate-y-1"></div>
-           
-          </div>
-        </button>
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowInfo(true)}
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-        <h1 className="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 drop-shadow-sm absolute left-1/2 -translate-x-1/2 text-center w-full pointer-events-none">
-          Thêm Câu Hỏi
-        </h1>
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center space-x-2">
+              {/* Show add question link if user has identity */}
+              {/* {identity && (
+                <Link 
+                  to="/add-question" 
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-purple-600 bg-purple-50 font-semibold transition-all duration-200"
+                >
+                  Thêm câu hỏi
+                </Link>
+              )} */}
+            </div>
 
-        {/* Info Button */}
-        <button
-          onClick={() => setShowInfo(true)}
-          className="group relative z-10"
-        >
-          <div className="relative transform transition-transform active:scale-95 duration-150">
-            <div className="absolute inset-0 bg-blue-400 rounded-full translate-y-1"></div>
-            <div className="relative bg-white border-2 border-blue-200 w-8 h-8 rounded-full font-black text-blue-500 flex items-center justify-center group-hover:-translate-y-0.5 transition-transform shadow-sm">
-              i
+            {/* Desktop Auth Section */}
+            <div className="hidden md:flex items-center space-x-2 md:space-x-3">
+
+               {identity && (
+                <Link 
+                  to="/add-question" 
+                  className="px-4 py-2 border rounded-lg text-sm font-medium text-purple-600 bg-purple-50 font-semibold transition-all duration-200"
+                >
+                  Thêm câu hỏi
+                </Link>
+              )}
+              {/* Timeline button */}
+              <Link 
+                to="/timeline" 
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Timeline
+              </Link>
+              
+              {identity ? (
+                <>
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="text-2xl">{identity.avatar}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {identity.displayName}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={async () => {
+                      await authService.logout()
+                      identityService.setManualLogout()
+                      navigate('/')
+                    }}
+                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Bốc thăm
+                </Link>
+              )}
+
+              {/* Info Button */}
+             
             </div>
           </div>
-        </button>
-      </div>
+        </div>
+      </nav>
 
-      {/* Identity Check */}
+      {/* Main Content */}
+      <div className="flex-1 p-4 flex flex-col items-center relative overflow-auto">
+        {/* Identity Check */}
       {!identityService.hasIdentity() && (
         <div className="w-full max-w-3xl mb-4">
           <div className="bg-yellow-100/80 backdrop-blur-xl border border-yellow-400/50 text-yellow-700 px-4 py-3 rounded-2xl shadow-lg">
@@ -608,9 +677,10 @@ function AddQuestionPage() {
         </div>
       )}
 
-      {/* Decorative Background Elements */}
-      <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none"></div>
-      <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none"></div>
+        {/* Decorative Background Elements */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob pointer-events-none"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 pointer-events-none"></div>
+      </div>
 
       {/* Tour Guide */}
       <TourGuide
