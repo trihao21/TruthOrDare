@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { questionService, authService } from '../services'
+import { questionService, authService, submittedQuestionsService } from '../services'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
 
@@ -151,6 +151,9 @@ function AddQuestionPage() {
         const errorMessages = failedSubmissions.map(result => result.error).join(', ')
         throw new Error(`Không thể thêm một số câu hỏi: ${errorMessages}`)
       }
+
+      // Save submitted questions
+      submittedQuestionsService.add(validRows)
 
       // Show success message
       setShowSuccessModal(true)
@@ -554,10 +557,13 @@ function AddQuestionPage() {
               </div>
             </div>
 
-            {/* Action Button */}
-            <div className="text-center">
+            {/* Action Buttons */}
+            <div className="text-center space-y-2">
               <button
-                onClick={() => setShowSuccessModal(false)}
+                onClick={() => {
+                  setShowSuccessModal(false)
+                  navigate('/summary')
+                }}
                 className="group relative w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden"
               >
                 {/* Button Glow */}
@@ -565,7 +571,7 @@ function AddQuestionPage() {
                 
                 {/* Button Content */}
                 <span className="relative flex items-center justify-center gap-2">
-                  <span>Đã hiểu</span>
+                  <span>Xem tóm tắt</span>
                   <svg 
                     className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
                     fill="none" 
@@ -575,6 +581,12 @@ function AddQuestionPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </span>
+              </button>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-gray-200 text-gray-700 font-medium py-2.5 px-8 rounded-xl hover:bg-gray-300 transition-all duration-300"
+              >
+                Đóng
               </button>
             </div>
           </div>

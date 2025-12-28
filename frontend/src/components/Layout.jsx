@@ -1,17 +1,27 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
-import { authService } from '../services'
-import SecretMissionPopup from './SecretMissionPopup'
+import { useState, useEffect } from 'react'
+import { authService, submittedQuestionsService } from '../services'
 
 function Layout({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const currentUser = authService.getCurrentUser()
   const isAuthenticated = authService.isAuthenticated()
-  const [showSecretMission, setShowSecretMission] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [hasSubmittedQuestions, setHasSubmittedQuestions] = useState(false)
 
   const isActive = (path) => location.pathname === path
+
+  useEffect(() => {
+    const checkSubmittedQuestions = () => {
+      const submissions = submittedQuestionsService.getAll()
+      setHasSubmittedQuestions(submissions.length > 0)
+    }
+    checkSubmittedQuestions()
+    // Check periodically in case submissions are added from another tab
+    const interval = setInterval(checkSubmittedQuestions, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleLogout = async () => {
     await authService.logout()
@@ -110,19 +120,19 @@ function Layout({ children }) {
                     Timeline
                   </Link>
                   
-                  {/* Secret Mission Button (for testing) */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setShowSecretMission(true)
-                    }}
-                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-                    title="Mở Secret Mission (Test)"
-                    type="button"
-                  >
-                    <span className="hidden sm:inline">🎯 </span>Secret
-                  </button>
+                  {/* Summary button - only show if user has submitted questions */}
+                  {hasSubmittedQuestions && (
+                    <Link 
+                      to="/summary" 
+                      className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
+                        isActive('/summary')
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                          : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                      }`}
+                    >
+                      Tóm tắt
+                    </Link>
+                  )}
                   
                   <div className="hidden sm:flex items-center gap-2">
                     <span className="text-sm">{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
@@ -190,6 +200,20 @@ function Layout({ children }) {
                 </Link>
               )}
               
+              {isAuthenticated && hasSubmittedQuestions && (
+                <Link 
+                  to="/summary" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-center ${
+                    isActive('/summary')
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                  }`}
+                >
+                  Tóm tắt
+                </Link>
+              )}
+              
               {isAuthenticated && currentUser?.role === 'admin' && (
                 <Link 
                   to="/manage" 
@@ -206,18 +230,6 @@ function Layout({ children }) {
 
               {isAuthenticated && (
                 <div className="pt-2 border-t border-gray-200 space-y-2">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setShowSecretMission(true)
-                      setMobileMenuOpen(false)
-                    }}
-                    className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
-                  >
-                    🎯 Secret Mission
-                  </button>
-                  
                   <div className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <span>{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
@@ -254,16 +266,6 @@ function Layout({ children }) {
       <main>
         {children}
       </main>
-
-      {/* Secret Mission Popup */}
-      {showSecretMission && (
-        <SecretMissionPopup 
-          onClose={() => {
-            console.log('Closing Secret Mission popup')
-            setShowSecretMission(false)
-          }} 
-        />
-      )}
     </div>
   )
 }

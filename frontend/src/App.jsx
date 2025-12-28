@@ -9,6 +9,7 @@ import LoginPage from './pages/LoginPage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
 import TimelinePage from './pages/TimelinePage'
+import SummaryPage from './pages/SummaryPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -32,7 +33,7 @@ function App() {
       if (isMounted) {
         console.warn('Loading timeout - rendering app anyway')
         setLoading(false)
-        setError('Không thể tải dữ liệu từ server. Server có thể đang wake up (Render free tier). Ứng dụng sẽ hoạt động với dữ liệu mặc định. Vui lòng thử lại sau vài giây.')
+        setError('Server lỏ nên hay bị lỗi. Mọi người bấm nút Thử lại bên dưới để reload nha!')
         setQuestions({
           'TRUTH': [],
           'DARE': [],
@@ -163,19 +164,21 @@ function App() {
       {error && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
+          bottom: '20px',
+          right: '20px',
+          maxWidth: '400px',
           backgroundColor: '#fee2e2',
-          borderBottom: '2px solid #dc2626',
-          padding: '12px 20px',
+          border: '2px solid #dc2626',
+          borderRadius: '8px',
+          padding: '12px 16px',
           zIndex: 9999,
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontFamily: 'system-ui, -apple-system, sans-serif'
+          flexDirection: 'column',
+          gap: '10px',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
         }}>
-          <div style={{ color: '#dc2626', fontSize: '14px', flex: 1 }}>
+          <div style={{ color: '#dc2626', fontSize: '14px', lineHeight: '1.4' }}>
             ⚠️ {error}
           </div>
           <button
@@ -184,7 +187,7 @@ function App() {
               loadQuestions()
             }}
             style={{
-              marginLeft: '20px',
+              alignSelf: 'flex-end',
               padding: '6px 16px',
               backgroundColor: '#3b82f6',
               color: 'white',
@@ -221,6 +224,7 @@ function App() {
                 } 
               />
               <Route path="/add-question" element={<AddQuestionPage />} />
+              <Route path="/summary" element={<SummaryPage />} />
               <Route path="/timeline" element={<TimelinePage />} />
               <Route 
                 path="/manage" 
