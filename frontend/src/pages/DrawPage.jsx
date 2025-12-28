@@ -137,12 +137,8 @@ function DrawPage() {
 
         // Clear manual logout flag when drawing new identity
         identityService.clearManualLogout()
-
-        // Navigate to add-question page immediately after drawing
-        setIsNavigating(true)
-        setTimeout(() => {
-          navigate('/add-question')
-        }, 500)
+        
+        // Don't auto-navigate - let user see account info modal first
       } catch (error) {
         console.error('Error drawing identity:', error)
         setIsDrawing(false)
@@ -400,12 +396,7 @@ function DrawPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-fade-in">
           <div className="bg-white border-2 border-purple-200 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-pop-in relative">
             {/* Close Button */}
-            <button
-              onClick={() => setShowAccountModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 font-bold text-lg hover:scale-110 active:scale-95"
-            >
-              ✕
-            </button>
+           
 
             {/* Icon */}
             <div className="text-center mb-6">
@@ -477,13 +468,24 @@ function DrawPage() {
               </p>
             </div>
 
-            {/* Close Button */}
-            <button
-              onClick={() => setShowAccountModal(false)}
-              className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300"
-            >
-              Đã hiểu
-            </button>
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowAccountModal(false)
+                  // Navigate to add-question page
+                  identityService.clearManualLogout()
+                  setIsNavigating(true)
+                  setTimeout(() => {
+                    navigate('/add-question')
+                  }, 300)
+                }}
+                className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300"
+              >
+                Đến trang đặt câu hỏi
+              </button>
+             
+            </div>
           </div>
         </div>
       )}
