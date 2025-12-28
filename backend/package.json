@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "create-users": "node scripts/createDefaultUsers.js"
+    "create-users": "node scripts/createDefaultUsers.js",
+    "reset-identities": "node scripts/resetIdentities.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

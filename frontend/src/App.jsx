@@ -4,13 +4,12 @@ import Layout from './components/Layout'
 import RoleBasedRedirect from './components/RoleBasedRedirect'
 import HomePage from './pages/HomePage'
 import AddQuestionPage from './pages/AddQuestionPage'
+import DrawPage from './pages/DrawPage'
 import ManagePage from './pages/ManagePage'
 import LoginPage from './pages/LoginPage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
 import TimelinePage from './pages/TimelinePage'
-import SummaryPage from './pages/SummaryPage'
-import JoinPage from './pages/JoinPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -205,27 +204,28 @@ function App() {
       
       <Routes>
         {/* Routes without Layout (full-screen pages) */}
+        <Route path="/" element={<DrawPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/mission-login" element={<MissionLoginPage />} />
         <Route path="/mission" element={<MissionPage />} />
-        <Route path="/join" element={<JoinPage />} />
         
         {/* Routes with Layout */}
         <Route path="/*" element={
           <Layout>
             <Routes>
+              <Route path="/add-question" element={<AddQuestionPage />} />
+              <Route path="/timeline" element={<TimelinePage />} />
               <Route 
-                path="/" 
+                path="/manage" 
                 element={
-                  <HomePage 
-                    questions={questions} 
-                    onQuestionsUpdate={loadQuestions} 
-                  />
+                  <RoleBasedRedirect>
+                    <ManagePage 
+                      questions={questions} 
+                      onQuestionsUpdate={loadQuestions} 
+                    />
+                  </RoleBasedRedirect>
                 } 
               />
-              <Route path="/add-question" element={<AddQuestionPage />} />
-              <Route path="/summary" element={<SummaryPage />} />
-              <Route path="/timeline" element={<TimelinePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>

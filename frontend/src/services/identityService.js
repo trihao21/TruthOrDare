@@ -1,124 +1,179 @@
-import { utilService } from './utilService'
+// Identity/Player management service
+// Manages sealed accounts with random assignment (Backend + LocalStorage)
 
-const IDENTITIES_KEY = 'sealed_identities'
-const ASSIGNMENTS_KEY = 'identity_assignments'
-const DEVICE_ID_KEY = 'device_id'
+import { api } from './api.js'
 
-// 8 identity cố định
-const DEFAULT_IDENTITIES = [
-  { id: 'player_1', avatar: '🔵', color: 'blue', colorName: 'Xanh dương' },
-  { id: 'player_2', avatar: '🟣', color: 'purple', colorName: 'Tím' },
-  { id: 'player_3', avatar: '🟢', color: 'green', colorName: 'Xanh lá' },
-  { id: 'player_4', avatar: '🔴', color: 'red', colorName: 'Đỏ' },
-  { id: 'player_5', avatar: '🟠', color: 'orange', colorName: 'Cam' },
-  { id: 'player_6', avatar: '🟡', color: 'yellow', colorName: 'Vàng' },
-  { id: 'player_7', avatar: '⚫', color: 'black', colorName: 'Đen' },
-  { id: 'player_8', avatar: '⚪', color: 'white', colorName: 'Trắng' }
+const IDENTITIES = [
+  { id: 'player_1', avatar: '🔵', color: '#3B82F6', displayName: 'Người chơi 1' },
+  { id: 'player_2', avatar: '🟣', color: '#8B5CF6', displayName: 'Người chơi 2' },
+  { id: 'player_3', avatar: '🟢', color: '#10B981', displayName: 'Người chơi 3' },
+  { id: 'player_4', avatar: '🟡', color: '#F59E0B', displayName: 'Người chơi 4' },
+  { id: 'player_5', avatar: '🔴', color: '#EF4444', displayName: 'Người chơi 5' },
+  { id: 'player_6', avatar: '🟠', color: '#F97316', displayName: 'Người chơi 6' },
+  { id: 'player_7', avatar: '🟤', color: '#A16207', displayName: 'Người chơi 7' },
+  { id: 'player_8', avatar: '⚪', color: '#6B7280', displayName: 'Người chơi 8' }
 ]
 
-// Tạo device ID duy nhất cho thiết bị
-const getDeviceId = () => {
-  let deviceId = utilService.storage.get(DEVICE_ID_KEY)
+const STORAGE_KEY = 'hipdam_assigned_identity'
+const STORAGE_KEY_LOGOUT_FLAG = 'hipdam_manual_logout'
+const STORAGE_KEY_DEVICE_ID = 'hipdam_device_id'
+
+// Generate or get unique device ID
+const getOrCreateDeviceId = () => {
+  let deviceId = localStorage.getItem(STORAGE_KEY_DEVICE_ID)
   if (!deviceId) {
-    deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    utilService.storage.set(DEVICE_ID_KEY, deviceId)
+    // Generate unique device ID
+    deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${navigator.userAgent.substring(0, 20).replace(/\s/g, '_')}`
+    localStorage.setItem(STORAGE_KEY_DEVICE_ID, deviceId)
   }
   return deviceId
 }
 
 export const identityService = {
-  // Khởi tạo 8 identity (chỉ làm 1 lần)
-  initialize() {
-    const existing = utilService.storage.get(IDENTITIES_KEY)
-    if (!existing || existing.length === 0) {
-      utilService.storage.set(IDENTITIES_KEY, DEFAULT_IDENTITIES)
-    }
-  },
-
-  // Lấy tất cả identities
+  // Get all available identities
   getAllIdentities() {
-    this.initialize()
-    return utilService.storage.get(IDENTITIES_KEY, DEFAULT_IDENTITIES)
+    return IDENTITIES
   },
 
-  // Lấy tất cả assignments (device -> identity)
-  getAllAssignments() {
-    return utilService.storage.get(ASSIGNMENTS_KEY, {})
+  // Get currently assigned identity for this device
+  getAssignedIdentity() {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      try {
+        return JSON.parse(stored)
+      } catch (e) {
+        return null
+      }
+    }
+    return null
   },
 
-  // Lấy identity đã được assign cho device hiện tại
-  getMyIdentity() {
-    const deviceId = getDeviceId()
-    const assignments = this.getAllAssignments()
-    const myIdentityId = assignments[deviceId]
-    
-    if (!myIdentityId) {
-      return null
+  // Check if device already has an identity assigned
+  hasIdentity() {
+    return this.getAssignedIdentity() !== null
+  },
+
+  // Draw a random identity from backend
+  async drawRandomIdentity(username) {
+    try {
+      // Call backend API to assign identity
+      const response = await api.assignIdentity(username)
+      
+      if (response.success && response.identity) {
+        // Save to localStorage as cache
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(response.identity))
+        return response.identity
+      }
+      
+      throw new Error('Failed to assign identity')
+    } catch (error) {
+      console.error('Error drawing identity from backend:', error)
+      // Fallback to local if backend fails
+      return this.drawRandomIdentityLocal()
+    }
+  },
+
+  // Fallback: Draw random identity locally (if backend unavailable)
+  drawRandomIdentityLocal() {
+    const existing = this.getAssignedIdentity()
+    if (existing) {
+      return existing
     }
 
-    const identities = this.getAllIdentities()
-    return identities.find(id => id.id === myIdentityId) || null
+    // Random select from all identities
+    const randomIndex = Math.floor(Math.random() * IDENTITIES.length)
+    const selected = IDENTITIES[randomIndex]
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(selected))
+    return selected
   },
 
-  // Lấy danh sách identity đã được bốc
-  getAssignedIdentities() {
-    const assignments = this.getAllAssignments()
-    return Object.values(assignments)
+  // Reset identity (for testing)
+  resetIdentity() {
+    localStorage.removeItem(STORAGE_KEY)
+    // Note: We don't remove from taken list to prevent immediate re-assignment
   },
 
-  // Lấy danh sách identity chưa được bốc
-  getAvailableIdentities() {
-    const allIdentities = this.getAllIdentities()
-    const assignedIds = this.getAssignedIdentities()
-    return allIdentities.filter(id => !assignedIds.includes(id.id))
+  // Clear all identity data (for testing)
+  clearAll() {
+    localStorage.removeItem(STORAGE_KEY)
   },
 
-  // Bốc thăm ngẫu nhiên một identity
-  drawRandomIdentity() {
-    // Kiểm tra xem device đã bốc chưa
-    const myIdentity = this.getMyIdentity()
-    if (myIdentity) {
-      return { success: false, error: 'Bạn đã bốc thăm rồi!', identity: myIdentity }
+  // Get current identity info
+  getCurrentIdentity() {
+    return this.getAssignedIdentity()
+  },
+
+  // Convert identity ID to username (player_1 -> player1)
+  getIdToUsername(identityId) {
+    // Convert player_1 -> player1, player_2 -> player2, etc.
+    return identityId.replace('_', '')
+  },
+
+  // Get username from identity
+  getUsernameFromIdentity(identity) {
+    if (!identity) return null
+    return this.getIdToUsername(identity.id)
+  },
+
+  // Mark that user has manually logged out (don't auto-login)
+  setManualLogout() {
+    localStorage.setItem(STORAGE_KEY_LOGOUT_FLAG, 'true')
+  },
+
+  // Check if user has manually logged out
+  hasManualLogout() {
+    return localStorage.getItem(STORAGE_KEY_LOGOUT_FLAG) === 'true'
+  },
+
+  // Clear manual logout flag (when user manually logs in again)
+  clearManualLogout() {
+    localStorage.removeItem(STORAGE_KEY_LOGOUT_FLAG)
+  },
+
+  // Get status of all identities from backend
+  async getAllIdentitiesStatus() {
+    try {
+      const response = await api.getIdentitiesStatus()
+      if (response.success && response.identities) {
+        return response.identities
+      }
+      throw new Error('Failed to get identities status')
+    } catch (error) {
+      console.error('Error getting identities status from backend:', error)
+      // Fallback to local status
+      return this.getAllIdentitiesStatusLocal()
     }
+  },
 
-    // Lấy danh sách identity còn trống
-    const available = this.getAvailableIdentities()
-    
-    if (available.length === 0) {
-      return { success: false, error: 'Tất cả identity đã được bốc hết!' }
+  // Fallback: Get status locally
+  getAllIdentitiesStatusLocal() {
+    const current = this.getAssignedIdentity()
+    return IDENTITIES.map(identity => ({
+      ...identity,
+      isTaken: false, // Can't know from local only
+      isCurrent: current && current.id === identity.id
+    }))
+  },
+
+  // Get current identity from backend
+  async getCurrentIdentityFromBackend() {
+    try {
+      const response = await api.getCurrentIdentity()
+      if (response.success) {
+        if (response.identity) {
+          // Cache in localStorage
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(response.identity))
+          return response.identity
+        }
+        return null
+      }
+    } catch (error) {
+      console.error('Error getting current identity from backend:', error)
+      // Fallback to local
+      return this.getAssignedIdentity()
     }
-
-    // Random một identity
-    const randomIndex = Math.floor(Math.random() * available.length)
-    const selectedIdentity = available[randomIndex]
-
-    // Gán cho device hiện tại
-    const deviceId = getDeviceId()
-    const assignments = this.getAllAssignments()
-    assignments[deviceId] = selectedIdentity.id
-    utilService.storage.set(ASSIGNMENTS_KEY, assignments)
-
-    return { success: true, identity: selectedIdentity }
-  },
-
-  // Reset tất cả (chỉ dùng cho testing/admin)
-  resetAll() {
-    utilService.storage.remove(ASSIGNMENTS_KEY)
-    utilService.storage.remove(DEVICE_ID_KEY)
-    this.initialize()
-  },
-
-  // Reset identity của device hiện tại
-  resetMyIdentity() {
-    const deviceId = getDeviceId()
-    const assignments = this.getAllAssignments()
-    delete assignments[deviceId]
-    utilService.storage.set(ASSIGNMENTS_KEY, assignments)
-  },
-
-  // Lấy device ID
-  getDeviceId() {
-    return getDeviceId()
   }
 }
 

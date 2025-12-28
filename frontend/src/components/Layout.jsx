@@ -1,39 +1,24 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { submittedQuestionsService, identityService } from '../services'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { authService } from '../services'
+import { identityService } from '../services/identityService'
 
 function Layout({ children }) {
+  const navigate = useNavigate()
   const location = useLocation()
+  const currentUser = authService.getCurrentUser()
+  const isAuthenticated = authService.isAuthenticated()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [hasSubmittedQuestions, setHasSubmittedQuestions] = useState(false)
-  const [myIdentity, setMyIdentity] = useState(null)
 
   const isActive = (path) => location.pathname === path
 
-  useEffect(() => {
-    // Khởi tạo identity service
-    identityService.initialize()
-
-    const checkSubmittedQuestions = () => {
-      const submissions = submittedQuestionsService.getAll()
-      setHasSubmittedQuestions(submissions.length > 0)
-    }
-
-    const checkIdentity = () => {
-      const identity = identityService.getMyIdentity()
-      setMyIdentity(identity)
-    }
-
-    checkSubmittedQuestions()
-    checkIdentity()
-    
-    // Check periodically in case submissions are added from another tab
-    const interval = setInterval(() => {
-      checkSubmittedQuestions()
-      checkIdentity()
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [])
+  const handleLogout = async () => {
+    await authService.logout()
+    // Mark manual logout to prevent auto-login
+    identityService.setManualLogout()
+    navigate('/')
+    setMobileMenuOpen(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -71,75 +56,81 @@ function Layout({ children }) {
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-2">
-              <Link 
-                to="/add-question" 
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/add-question') 
-                    ? 'text-purple-600 bg-purple-50 font-semibold' 
-                    : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                }`}
-              >
-                Thêm câu hỏi
-              </Link>
-            </div>
-
-            {/* Desktop Actions Section */}
-            <div className="hidden md:flex items-center space-x-2 md:space-x-3">
-              {/* Add Question button - always visible */}
-              <Link 
-                to="/add-question" 
-                className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                  isActive('/add-question')
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
-                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                }`}
-              >
-                ➕ Thêm câu hỏi
-              </Link>
-
-              {/* Identity Display - if drawn */}
-              {myIdentity && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md">
-                  <span className="text-xl">{myIdentity.avatar}</span>
-                  <span className="text-xs md:text-sm font-medium">
-                    {myIdentity.colorName}
-                  </span>
-                </div>
-              )}
-
-              {/* Join button - if not drawn yet */}
-              {!myIdentity && (
+              {/* Only show home link for admin */}
+              {isAuthenticated && currentUser?.role === 'admin' && (
                 <Link 
                   to="/" 
-                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                    isActive('/')
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
                   }`}
                 >
-                  🎭 Tham gia
+                  Trang chủ
                 </Link>
               )}
-
-              {/* Timeline button */}
-              <Link 
-                to="/timeline" 
-                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                Timeline
-              </Link>
               
-              {/* Summary button - only show if user has submitted questions */}
-              {hasSubmittedQuestions && (
+              {/* Only show add question link for admin */}
+              {isAuthenticated && currentUser?.role === 'admin' && (
                 <Link 
-                  to="/summary" 
-                  className={`px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                    isActive('/summary')
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                  to="/add-question" 
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/add-question') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
                   }`}
                 >
-                  Tóm tắt
+                  Thêm câu hỏi
+                </Link>
+              )}
+              
+              {/* Only show manage link for admin */}
+              {isAuthenticated && currentUser?.role === 'admin' && (
+                <Link 
+                  to="/manage" 
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/manage') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                >
+                  Quản lý
+                </Link>
+              )}
+            </div>
+
+            {/* Desktop Auth Section */}
+            <div className="hidden md:flex items-center space-x-2 md:space-x-3">
+              {isAuthenticated ? (
+                <>
+                  {/* Timeline button - visible to all authenticated users */}
+                  <Link 
+                    to="/timeline" 
+                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    Timeline
+                  </Link>
+                  
+                  <div className="hidden sm:flex items-center gap-2">
+                    <span className="text-sm">{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {currentUser?.displayName || currentUser?.username}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Đăng nhập
                 </Link>
               )}
             </div>
@@ -148,62 +139,85 @@ function Layout({ children }) {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
-              <Link 
-                to="/add-question" 
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-center ${
-                  isActive('/add-question') 
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold' 
-                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                }`}
-              >
-                ➕ Thêm câu hỏi
-              </Link>
-              
-              {/* Identity Display - if drawn */}
-              {myIdentity && (
-                <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
-                  <span className="text-xl">{myIdentity.avatar}</span>
-                  <span className="text-sm font-medium">
-                    Player {myIdentity.colorName}
-                  </span>
-                </div>
-              )}
-
-              {/* Join button - if not drawn yet */}
-              {!myIdentity && (
+              {isAuthenticated && currentUser?.role === 'admin' && (
                 <Link 
                   to="/" 
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-center ${
-                    isActive('/')
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
                   }`}
                 >
-                  🎭 Tham gia
+                  Trang chủ
+                </Link>
+              )}
+              
+              {isAuthenticated && currentUser?.role === 'admin' && (
+                <Link 
+                  to="/add-question" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/add-question') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                >
+                  Thêm câu hỏi
+                </Link>
+              )}
+              
+              {isAuthenticated && (
+                <Link 
+                  to="/timeline" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
+                >
+                  Timeline
+                </Link>
+              )}
+              
+              {isAuthenticated && currentUser?.role === 'admin' && (
+                <Link 
+                  to="/manage" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/manage') 
+                      ? 'text-purple-600 bg-purple-50 font-semibold' 
+                      : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                >
+                  Quản lý
                 </Link>
               )}
 
-              <Link 
-                to="/timeline" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
-              >
-                Timeline
-              </Link>
-              
-              {hasSubmittedQuestions && (
-                <Link 
-                  to="/summary" 
+              {isAuthenticated && (
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <div className="px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <span>{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {currentUser?.displayName || currentUser?.username}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
+
+              {!isAuthenticated && (
+                <Link
+                  to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-center ${
-                    isActive('/summary')
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
-                  }`}
+                  className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
                 >
-                  Tóm tắt
+                  Đăng nhập
                 </Link>
               )}
             </div>

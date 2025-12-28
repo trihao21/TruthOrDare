@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import questionRoutes from './routes/questionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import missionRoutes from './routes/missionRoutes.js';
+import identityRoutes from './routes/identityRoutes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 // Load environment variables
@@ -17,11 +18,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+// Trust proxy for accurate IP addresses (important for Render)
+app.set('trust proxy', true);
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/missions', missionRoutes);
+app.use('/api/identities', identityRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

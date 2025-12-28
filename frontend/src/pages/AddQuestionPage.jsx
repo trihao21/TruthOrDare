@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { questionService, submittedQuestionsService } from '../services'
+import { questionService, authService } from '../services'
+import { identityService } from '../services/identityService'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
 
@@ -70,6 +71,14 @@ function AddQuestionPage() {
   }
 
   const handleSubmit = async () => {
+    // Check identity (bốc thăm = đăng nhập)
+    const hasIdentity = identityService.hasIdentity()
+    if (!hasIdentity) {
+      setGlobalError('Bạn cần bốc thăm identity trước khi thêm câu hỏi')
+      setShowErrorModal(true)
+      return
+    }
+
     // Validate all rows first
     let hasErrors = false
     const validatedRows = rows.map(row => {
@@ -145,9 +154,6 @@ function AddQuestionPage() {
         throw new Error(`Không thể thêm một số câu hỏi: ${errorMessages}`)
       }
 
-      // Save submitted questions
-      submittedQuestionsService.add(validRows)
-
       // Show success message
       setShowSuccessModal(true)
       // Reset to one empty row
@@ -166,7 +172,7 @@ function AddQuestionPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center overflow-hidden font-sans">
+    <div className="fixed inset-0 h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center relative overflow-hidden font-sans">
 
       {/* Back Button & Header */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-4 pt-2 relative">
@@ -176,9 +182,7 @@ function AddQuestionPage() {
         >
           <div className="relative transform transition-transform active:scale-95 duration-150">
             <div className="absolute inset-0 bg-gray-400 rounded-full translate-y-1"></div>
-            <div className="relative bg-white border-2 border-gray-200 w-8 h-8 rounded-full font-black text-gray-600 flex items-center justify-center group-hover:-translate-y-0.5 transition-transform shadow-sm">
-              ←
-            </div>
+           
           </div>
         </button>
 
@@ -199,6 +203,24 @@ function AddQuestionPage() {
           </div>
         </button>
       </div>
+
+      {/* Identity Check */}
+      {!identityService.hasIdentity() && (
+        <div className="w-full max-w-3xl mb-4">
+          <div className="bg-yellow-100/80 backdrop-blur-xl border border-yellow-400/50 text-yellow-700 px-4 py-3 rounded-2xl shadow-lg">
+            <p className="text-sm font-medium text-center">
+              Bạn cần bốc thăm identity trước khi thêm câu hỏi.{' '}
+              <button
+                onClick={() => navigate('/')}
+                className="text-yellow-800 underline font-bold"
+              >
+                Bốc thăm ngay
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {/* Main Container */}
       <div className="w-full max-w-3xl perspective-1000 flex-1 flex flex-col min-h-0">
@@ -345,7 +367,7 @@ function AddQuestionPage() {
           <div className="pt-2 border-t border-white/30">
             <button
               onClick={handleSubmit}
-              disabled={loading || !authService.isAuthenticated()}
+              disabled={loading || !identityService.hasIdentity()}
               className="w-full group relative disabled:opacity-70 disabled:cursor-not-allowed"
               data-tour="add-question-submit"
             >
@@ -534,13 +556,10 @@ function AddQuestionPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="text-center space-y-2">
+            {/* Action Button */}
+            <div className="text-center">
               <button
-                onClick={() => {
-                  setShowSuccessModal(false)
-                  navigate('/summary')
-                }}
+                onClick={() => setShowSuccessModal(false)}
                 className="group relative w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold py-3.5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden"
               >
                 {/* Button Glow */}
@@ -548,7 +567,7 @@ function AddQuestionPage() {
                 
                 {/* Button Content */}
                 <span className="relative flex items-center justify-center gap-2">
-                  <span>Xem tóm tắt</span>
+                  <span>Đã hiểu</span>
                   <svg 
                     className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
                     fill="none" 
@@ -558,12 +577,6 @@ function AddQuestionPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </span>
-              </button>
-              <button
-                onClick={() => setShowSuccessModal(false)}
-                className="w-full bg-gray-200 text-gray-700 font-medium py-2.5 px-8 rounded-xl hover:bg-gray-300 transition-all duration-300"
-              >
-                Đóng
               </button>
             </div>
           </div>
