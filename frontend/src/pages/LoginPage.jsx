@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { authService, utilService } from '../services'
+import { authService, utilService, identityService } from '../services'
 import TourGuide from '../components/TourGuide'
 
 const defaultAccounts = [
@@ -48,7 +48,20 @@ function LoginPage() {
       const result = await authService.login(username, password)
       
       if (result.success) {
-        navigate(from, { replace: true })
+        // Check if this username has an assigned identity
+        // If username matches player pattern (player1, player2, etc.), redirect to add-question
+        const isPlayerAccount = /^player\d+$/.test(username.toLowerCase())
+        
+        // Also check if there's an identity assigned in localStorage
+        const assignedIdentity = identityService.getAssignedIdentity()
+        const accountInfo = identityService.getAccountInfo()
+        
+        // If user has identity or is a player account, redirect to add-question
+        if (assignedIdentity || (isPlayerAccount && accountInfo)) {
+          navigate('/add-question', { replace: true })
+        } else {
+          navigate(from, { replace: true })
+        }
       } else {
         setError(result.error || 'Đăng nhập thất bại')
       }
@@ -75,25 +88,16 @@ function LoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Chọn Người Chơi
+            Đăng nhập
           </h1>
-          <p className="text-gray-600">
-            Chọn tài khoản có sẵn hoặc đăng nhập thủ công
-          </p>
+         
         </div>
 
         {/* Quick Login Buttons */}
     
 
         {/* Divider */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Hoặc đăng nhập thủ công</span>
-          </div>
-        </div>
+      
 
         {/* Manual Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4" data-tour="login-form">
