@@ -1013,7 +1013,7 @@ function AddQuestionPage() {
           },
           {
             target: '[data-tour="add-question-submit"]',
-            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần bốc thăm identity để thêm câu hỏi.',
+            content: 'Sau khi đã thêm đủ tối đa 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi.',
             allowClickOutside: false
           }
         ]}
