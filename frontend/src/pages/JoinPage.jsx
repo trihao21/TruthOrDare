@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { identityService } from '../services/identityService'
-import { authService } from '../services/authService'
 
-function HomePage({ questions, onQuestionsUpdate }) {
+function JoinPage() {
   const navigate = useNavigate()
   const [myIdentity, setMyIdentity] = useState(null)
   const [availableCount, setAvailableCount] = useState(0)
@@ -14,17 +13,10 @@ function HomePage({ questions, onQuestionsUpdate }) {
     // Khởi tạo identities
     identityService.initialize()
     
-    // Khởi tạo auth để load identity-based user nếu có
-    authService.init()
-    
     // Kiểm tra xem đã bốc chưa
     const identity = identityService.getMyIdentity()
     if (identity) {
       setMyIdentity(identity)
-      // Đảm bảo đã đăng nhập với identity
-      if (!authService.isAuthenticated() || authService.getCurrentUser()?.authType !== 'identity') {
-        authService.loginWithIdentity(identity)
-      }
     }
 
     // Cập nhật số lượng còn lại
@@ -46,13 +38,6 @@ function HomePage({ questions, onQuestionsUpdate }) {
       if (result.success) {
         setMyIdentity(result.identity)
         updateAvailableCount()
-        // Tự động đăng nhập với identity
-        authService.loginWithIdentity(result.identity)
-        
-        // Tự động redirect sang màn hình thêm câu hỏi sau 1.5 giây
-        setTimeout(() => {
-          navigate('/add-question')
-        }, 1500)
       } else {
         alert(result.error)
       }
@@ -125,6 +110,13 @@ function HomePage({ questions, onQuestionsUpdate }) {
                   <li>• Identity này không hiển thị cho người khác</li>
                 </ul>
               </div>
+
+              <button
+                onClick={() => navigate('/')}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-xl hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              >
+                Về trang chủ
+              </button>
             </div>
           ) : (
             <div className="text-center">
@@ -197,4 +189,5 @@ function HomePage({ questions, onQuestionsUpdate }) {
   )
 }
 
-export default HomePage
+export default JoinPage
+

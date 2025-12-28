@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { questionService, authService, submittedQuestionsService } from '../services'
+import { questionService, submittedQuestionsService } from '../services'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
 
@@ -70,13 +70,6 @@ function AddQuestionPage() {
   }
 
   const handleSubmit = async () => {
-    // Check authentication
-    if (!authService.isAuthenticated()) {
-      setGlobalError('Bạn cần đăng nhập để thêm câu hỏi')
-      setShowErrorModal(true)
-      return
-    }
-
     // Validate all rows first
     let hasErrors = false
     const validatedRows = rows.map(row => {
@@ -173,7 +166,7 @@ function AddQuestionPage() {
   }
 
   return (
-    <div className="fixed inset-0 h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] p-4 flex flex-col items-center overflow-hidden font-sans">
 
       {/* Back Button & Header */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-4 pt-2 relative">
@@ -183,7 +176,9 @@ function AddQuestionPage() {
         >
           <div className="relative transform transition-transform active:scale-95 duration-150">
             <div className="absolute inset-0 bg-gray-400 rounded-full translate-y-1"></div>
-           
+            <div className="relative bg-white border-2 border-gray-200 w-8 h-8 rounded-full font-black text-gray-600 flex items-center justify-center group-hover:-translate-y-0.5 transition-transform shadow-sm">
+              ←
+            </div>
           </div>
         </button>
 
@@ -204,24 +199,6 @@ function AddQuestionPage() {
           </div>
         </button>
       </div>
-
-      {/* Authentication Check */}
-      {!authService.isAuthenticated() && (
-        <div className="w-full max-w-3xl mb-4">
-          <div className="bg-yellow-100/80 backdrop-blur-xl border border-yellow-400/50 text-yellow-700 px-4 py-3 rounded-2xl shadow-lg">
-            <p className="text-sm font-medium text-center">
-              Bạn cần đăng nhập để thêm câu hỏi mới.{' '}
-              <button
-                onClick={() => navigate('/login')}
-                className="text-yellow-800 underline font-bold"
-              >
-                Đăng nhập ngay
-              </button>
-            </p>
-          </div>
-        </div>
-      )}
-
 
       {/* Main Container */}
       <div className="w-full max-w-3xl perspective-1000 flex-1 flex flex-col min-h-0">

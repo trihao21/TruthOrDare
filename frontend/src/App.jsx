@@ -10,6 +10,7 @@ import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
 import TimelinePage from './pages/TimelinePage'
 import SummaryPage from './pages/SummaryPage'
+import JoinPage from './pages/JoinPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -207,6 +208,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/mission-login" element={<MissionLoginPage />} />
         <Route path="/mission" element={<MissionPage />} />
+        <Route path="/join" element={<JoinPage />} />
         
         {/* Routes with Layout */}
         <Route path="/*" element={
@@ -215,28 +217,15 @@ function App() {
               <Route 
                 path="/" 
                 element={
-                  <RoleBasedRedirect>
-                    <HomePage 
-                      questions={questions} 
-                      onQuestionsUpdate={loadQuestions} 
-                    />
-                  </RoleBasedRedirect>
+                  <HomePage 
+                    questions={questions} 
+                    onQuestionsUpdate={loadQuestions} 
+                  />
                 } 
               />
               <Route path="/add-question" element={<AddQuestionPage />} />
               <Route path="/summary" element={<SummaryPage />} />
               <Route path="/timeline" element={<TimelinePage />} />
-              <Route 
-                path="/manage" 
-                element={
-                  <RoleBasedRedirect>
-                    <ManagePage 
-                      questions={questions} 
-                      onQuestionsUpdate={loadQuestions} 
-                    />
-                  </RoleBasedRedirect>
-                } 
-              />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Layout>
