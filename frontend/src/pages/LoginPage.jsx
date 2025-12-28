@@ -83,46 +83,7 @@ function LoginPage() {
         </div>
 
         {/* Quick Login Buttons */}
-        <div className="mb-6" data-tour="login-quick-accounts">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Tài khoản có sẵn:</h3>
-          <div className="space-y-2">
-            {/* Admin Account */}
-            <button
-              onClick={() => handleQuickLogin(defaultAccounts[0].username, defaultAccounts[0].password)}
-              disabled={loading}
-              className="w-full p-3 bg-gradient-to-r from-red-100 to-orange-100 hover:from-red-200 hover:to-orange-200 rounded-lg border-2 border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              data-tour="login-admin-button"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-red-700">👑 {defaultAccounts[0].displayName}</div>
-                  <div className="text-xs text-red-500">@{defaultAccounts[0].username} (ADMIN)</div>
-                </div>
-                <div className="text-xs text-red-600 font-mono bg-red-50 px-2 py-1 rounded">
-                  {defaultAccounts[0].password}
-                </div>
-              </div>
-            </button>
-            
-            {/* User Accounts */}
-            <div className="grid grid-cols-2 gap-2">
-              {defaultAccounts.slice(1).map((account) => (
-                <button
-                  key={account.username}
-                  onClick={() => handleQuickLogin(account.username, account.password)}
-                  disabled={loading}
-                  className="p-3 bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 rounded-lg border border-purple-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="text-sm font-bold text-purple-700">{account.displayName}</div>
-                  <div className="text-xs text-purple-500">@{account.username}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="text-xs text-gray-500 mt-2 text-center">
-            User accounts password: <span className="font-mono bg-gray-100 px-1 rounded">123456</span>
-          </div>
-        </div>
+    
 
         {/* Divider */}
         <div className="relative mb-6">
