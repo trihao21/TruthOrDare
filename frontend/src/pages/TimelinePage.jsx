@@ -131,7 +131,7 @@ function TimelinePage() {
           <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-pink-500 to-indigo-500 transform -translate-x-1/2 animate-draw-line shadow-lg shadow-purple-500/50"></div>
           
           {/* Mobile: Vertical Line */}
-          <div className="md:hidden absolute left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-pink-500 to-indigo-500 animate-draw-line shadow-lg shadow-purple-500/50"></div>
+          <div className="md:hidden absolute left-[18px] top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-pink-500 to-indigo-500 transform -translate-x-1/2 animate-draw-line shadow-lg shadow-purple-500/50"></div>
 
           {/* Timeline Items */}
           <div className="space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12">
@@ -153,7 +153,7 @@ function TimelinePage() {
                   }}
                 >
                   {/* Timeline Dot with glow - Mobile optimized */}
-                  <div className="absolute left-4 md:left-1/2 transform md:-translate-x-1/2 -translate-y-1/2 top-0 md:top-1/2 z-20">
+                  <div className="absolute left-[18px] md:left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-0 md:top-1/2 z-20">
                     <div className={`relative w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-gradient-to-br from-purple-400 via-pink-400 to-indigo-400 rounded-full border-3 md:border-4 border-white shadow-2xl transition-all duration-500 ${
                       isVisible ? 'scale-100 animate-pulse-slow' : 'scale-0'
                     }`}
@@ -170,14 +170,14 @@ function TimelinePage() {
                   </div>
 
                   {/* Main Card - Mobile: Combined card, Desktop: Split layout */}
-                  <div className={`md:flex md:items-center md:gap-8 ${
-                    isEven ? 'md:flex-row' : 'md:flex-row-reverse'
-                  }`}>
-                    {/* Content Section */}
-                    <div className={`w-full md:w-5/12 transition-all duration-700 pl-12 md:pl-0 ${
+                  <div className="md:flex md:items-center md:gap-12 md:flex-row">
+                    {/* Content Section - Desktop */}
+                    <div className={`w-full md:w-[45%] transition-all duration-700 pl-12 md:pl-0 ${
+                      isEven ? 'md:pr-8 md:order-1' : 'md:pl-8 md:order-2'
+                    } ${
                       isVisible
                         ? 'translate-x-0 opacity-100'
-                        : '-translate-x-10 opacity-0'
+                        : isEven ? '-translate-x-20 opacity-0' : 'translate-x-20 opacity-0'
                     }`}
                     style={{
                       transitionDelay: `${index * 150 + 200}ms`
@@ -247,73 +247,99 @@ function TimelinePage() {
                         </div>
                       </div>
 
-                      {/* Desktop: Content Card Only */}
-                      <div className="hidden md:block bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl p-6 border border-white/20 group hover:bg-white/15 transition-all duration-500">
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="text-2xl">📅</span>
-                          <div>
-                            <p className="text-sm text-white/90 font-bold">{item.date}</p>
-                            <p className="text-xs text-white/70">{item.time}</p>
-                          </div>
-                        </div>
-                        <h3 className="text-2xl font-black mb-3">
-                          <span 
-                            className="inline-block"
-                            style={{
-                              background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%)',
-                              WebkitBackgroundClip: 'text',
-                              WebkitTextFillColor: 'transparent',
-                              backgroundClip: 'text'
-                            }}
-                          >
-                            {item.title}
-                          </span>
-                        </h3>
-                        <p className="text-base text-white/90 leading-relaxed mb-4">
-                          {item.description}
-                        </p>
-                        {item.location && (
-                          <div className="pt-4 border-t border-white/20">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xl">📍</span>
-                              <span className="text-sm text-white/80 font-semibold">{item.location}</span>
+                      {/* Desktop: Enhanced Content Card */}
+                      <div className="hidden md:block relative group">
+                        {/* Glow effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500"></div>
+                        
+                        {/* Card */}
+                        <div className="relative bg-white/10 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-white/20 group-hover:border-white/30 transition-all duration-500 group-hover:shadow-purple-500/20">
+                          {/* Date Badge with gradient */}
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                              <span className="text-2xl">📅</span>
                             </div>
-                            {item.locationLink && (
-                              <a
-                                href={item.locationLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-sm text-purple-300 hover:text-pink-300 font-medium transition-all duration-300 hover:bg-white/10 px-2 py-1.5 rounded-lg break-all"
-                              >
-                                <span className="break-all">{item.locationLink}</span>
-                                <span className="text-xs shrink-0">🔗</span>
-                              </a>
-                            )}
+                            <div>
+                              <p className="text-base text-white font-bold">{item.date}</p>
+                              <p className="text-sm text-white/70">{item.time}</p>
+                            </div>
                           </div>
-                        )}
+
+                          {/* Title with enhanced gradient */}
+                          <h3 className="text-3xl font-black mb-4 leading-tight">
+                            <span 
+                              className="inline-block bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent"
+                              style={{
+                                filter: 'drop-shadow(0 2px 10px rgba(236, 72, 153, 0.3))'
+                              }}
+                            >
+                              {item.title}
+                            </span>
+                          </h3>
+
+                          {/* Description */}
+                          <p className="text-lg text-white/90 leading-relaxed mb-6">
+                            {item.description}
+                          </p>
+
+                          {/* Location Section */}
+                          {item.location && (
+                            <div className="pt-6 border-t border-white/10">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                                  <span className="text-xl">📍</span>
+                                </div>
+                                <span className="text-base text-white/90 font-semibold">{item.location}</span>
+                              </div>
+                              {item.locationLink && (
+                                <a
+                                  href={item.locationLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 text-sm text-purple-300 hover:text-pink-300 font-medium transition-all duration-300 hover:bg-white/10 px-4 py-2.5 rounded-xl border border-white/10 hover:border-white/20 group/link"
+                                >
+                                  <span className="break-all">{item.locationLink}</span>
+                                  <span className="text-sm shrink-0 group-hover/link:translate-x-1 transition-transform">🔗</span>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Desktop: Image Section */}
-                    <div className={`hidden md:block w-5/12 transition-all duration-700 ${
+                    {/* Desktop: Enhanced Image Section */}
+                    <div className={`hidden md:block w-[45%] transition-all duration-700 ${
+                      isEven ? 'md:pl-8 md:order-2' : 'md:pr-8 md:order-1'
+                    } ${
                       isVisible
                         ? 'translate-x-0 opacity-100'
-                        : isEven ? 'translate-x-10 opacity-0' : '-translate-x-10 opacity-0'
+                        : isEven ? 'translate-x-20 opacity-0' : '-translate-x-20 opacity-0'
                     }`}
                     style={{
                       transitionDelay: `${index * 150 + 400}ms`
                     }}>
-                      <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl group hover:scale-105 transition-all duration-500">
-                        <div className="aspect-video overflow-hidden relative">
-                          {item.image && (
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                              loading="lazy"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <div className="relative group">
+                        {/* Glow effect */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 rounded-3xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500"></div>
+                        
+                        {/* Image Container */}
+                        <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl group-hover:border-white/30 transition-all duration-500">
+                          <div className="aspect-video overflow-hidden relative">
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                loading="lazy"
+                              />
+                            )}
+                            {/* Gradient overlay on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            
+                            {/* Shine effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
