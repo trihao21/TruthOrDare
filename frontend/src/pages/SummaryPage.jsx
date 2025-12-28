@@ -113,6 +113,9 @@ function SummaryPage() {
     dare: groupedQuestions.dare?.length || 0
   }
 
+  const MAX_QUESTIONS_PER_CATEGORY = 10
+  const isAtMaxLimit = stats.truth >= MAX_QUESTIONS_PER_CATEGORY && stats.dare >= MAX_QUESTIONS_PER_CATEGORY
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#E0E7FF] to-[#C7D2FE] flex items-center justify-center">
@@ -131,12 +134,22 @@ function SummaryPage() {
           <div className="text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Lỗi</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <Link
-            to="/add-question"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
-          >
-            Thêm câu hỏi
-          </Link>
+          {isAtMaxLimit ? (
+            <button
+              disabled
+              className="inline-block px-6 py-3 bg-gray-400 text-white font-bold rounded-xl cursor-not-allowed opacity-60 shadow-lg"
+              title="Bạn đã đạt giới hạn tối đa 10 câu Truth và 10 câu Dare"
+            >
+              Thêm câu hỏi (Đã đạt giới hạn)
+            </button>
+          ) : (
+            <Link
+              to="/add-question"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
+            >
+              Thêm câu hỏi
+            </Link>
+          )}
         </div>
       </div>
     )
@@ -184,12 +197,22 @@ function SummaryPage() {
             <div className="text-6xl mb-4">📝</div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Chưa có câu hỏi nào</h2>
             <p className="text-gray-600 mb-6">Bắt đầu thêm câu hỏi của bạn ngay!</p>
-            <Link
-              to="/add-question"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
-            >
-              Thêm câu hỏi
-            </Link>
+            {isAtMaxLimit ? (
+              <button
+                disabled
+                className="inline-block px-6 py-3 bg-gray-400 text-white font-bold rounded-xl cursor-not-allowed opacity-60 shadow-lg"
+                title="Bạn đã đạt giới hạn tối đa 10 câu Truth và 10 câu Dare"
+              >
+                Thêm câu hỏi (Đã đạt giới hạn)
+              </button>
+            ) : (
+              <Link
+                to="/add-question"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg"
+              >
+                Thêm câu hỏi
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
@@ -245,12 +268,22 @@ function SummaryPage() {
 
         {/* Action Button */}
         <div className="mt-8 text-center">
-          <Link
-            to="/add-question"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg transform hover:scale-105"
-          >
-            ➕ Thêm câu hỏi mới
-          </Link>
+          {isAtMaxLimit ? (
+            <button
+              disabled
+              className="inline-block px-8 py-4 bg-gray-400 text-white font-bold rounded-xl cursor-not-allowed opacity-60 shadow-lg"
+              title="Bạn đã đạt giới hạn tối đa 10 câu Truth và 10 câu Dare"
+            >
+              ➕ Thêm câu hỏi mới (Đã đạt giới hạn)
+            </button>
+          ) : (
+            <Link
+              to="/add-question"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg transform hover:scale-105"
+            >
+              ➕ Thêm câu hỏi mới
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -176,35 +176,14 @@ function AddQuestionPage() {
       return
     }
 
-    // Check minimum requirements: must have at least 10 truth and 10 dare
-    const truthCount = validRows.filter(r => r.category === 'truth').length
-    const dareCount = validRows.filter(r => r.category === 'dare').length
+    // Count new questions to be added in current submission
+    const newTruthCount = validRows.filter(r => r.category === 'truth').length
+    const newDareCount = validRows.filter(r => r.category === 'dare').length
 
-    const MIN_REQUIRED = 10
-    const missingTruth = MIN_REQUIRED - truthCount
-    const missingDare = MIN_REQUIRED - dareCount
-
-    if (truthCount < MIN_REQUIRED || dareCount < MIN_REQUIRED) {
-      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
-      
-      if (truthCount < MIN_REQUIRED) {
-        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Truth (hiện tại: ${truthCount}, còn thiếu: ${missingTruth})\n`
-      } else {
-        errorMessage += `• Truth: ${truthCount}/${MIN_REQUIRED} ✓\n`
-      }
-      
-      if (dareCount < MIN_REQUIRED) {
-        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Dare (hiện tại: ${dareCount}, còn thiếu: ${missingDare})`
-      } else {
-        errorMessage += `• Dare: ${dareCount}/${MIN_REQUIRED} ✓`
-      }
-      
-      setGlobalError(errorMessage)
-      setShowErrorModal(true)
-      return
-    }
-
-    // Check limit before showing confirmation
+    // Check limit FIRST (before minimum requirements) - user cannot add more than 10 questions per category
+    let existingTruthCount = 0
+    let existingDareCount = 0
+    
     try {
       // Auto-login to get user info for limit check
       const username = identityService.getUsernameFromIdentity(identity)
@@ -217,29 +196,25 @@ function AddQuestionPage() {
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
-          // Get current question counts
+          // Get current question counts (already existing in database)
           const userQuestions = await questionService.getUserQuestions(userId.toString())
           // userQuestions is now always an array (empty if API fails)
-          const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
-          const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
-          
-          // Count new questions to be added (already calculated above)
-          const newTruthCount = truthCount
-          const newDareCount = dareCount
+          existingTruthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
+          existingDareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
           
           const MAX_PER_CATEGORY = 10
           
-          // Check limits
-          if (truthCount + newTruthCount > MAX_PER_CATEGORY) {
-            const exceeded = (truthCount + newTruthCount) - MAX_PER_CATEGORY
-            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Truth. Hiện tại bạn đã có ${truthCount} câu, và đang cố thêm ${newTruthCount} câu (vượt quá ${exceeded} câu).`)
+          // Check limits - user cannot add more than 10 questions per category
+          if (existingTruthCount + newTruthCount > MAX_PER_CATEGORY) {
+            const exceeded = (existingTruthCount + newTruthCount) - MAX_PER_CATEGORY
+            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Truth. Hiện tại bạn đã có ${existingTruthCount} câu, và đang cố thêm ${newTruthCount} câu (vượt quá ${exceeded} câu).`)
             setShowErrorModal(true)
             return
           }
           
-          if (dareCount + newDareCount > MAX_PER_CATEGORY) {
-            const exceeded = (dareCount + newDareCount) - MAX_PER_CATEGORY
-            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Dare. Hiện tại bạn đã có ${dareCount} câu, và đang cố thêm ${newDareCount} câu (vượt quá ${exceeded} câu).`)
+          if (existingDareCount + newDareCount > MAX_PER_CATEGORY) {
+            const exceeded = (existingDareCount + newDareCount) - MAX_PER_CATEGORY
+            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Dare. Hiện tại bạn đã có ${existingDareCount} câu, và đang cố thêm ${newDareCount} câu (vượt quá ${exceeded} câu).`)
             setShowErrorModal(true)
             return
           }
@@ -248,6 +223,35 @@ function AddQuestionPage() {
     } catch (error) {
       console.error('Error checking limits:', error)
       // Continue anyway, backend will validate
+    }
+
+    // Check minimum requirements: total (existing + new) must have at least 10 truth and 10 dare
+    // If user already has 10 Truth + 10 Dare, skip minimum check
+    const MIN_REQUIRED = 10
+    const totalTruthCount = existingTruthCount + newTruthCount
+    const totalDareCount = existingDareCount + newDareCount
+    
+    // Only check minimum if user hasn't met the requirement yet
+    if (totalTruthCount < MIN_REQUIRED || totalDareCount < MIN_REQUIRED) {
+      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
+      
+      if (totalTruthCount < MIN_REQUIRED) {
+        const missingTruth = MIN_REQUIRED - totalTruthCount
+        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Truth (đã có: ${existingTruthCount}, thêm mới: ${newTruthCount}, tổng: ${totalTruthCount}, còn thiếu: ${missingTruth})\n`
+      } else {
+        errorMessage += `• Truth: ${totalTruthCount}/${MIN_REQUIRED} ✓\n`
+      }
+      
+      if (totalDareCount < MIN_REQUIRED) {
+        const missingDare = MIN_REQUIRED - totalDareCount
+        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Dare (đã có: ${existingDareCount}, thêm mới: ${newDareCount}, tổng: ${totalDareCount}, còn thiếu: ${missingDare})`
+      } else {
+        errorMessage += `• Dare: ${totalDareCount}/${MIN_REQUIRED} ✓`
+      }
+      
+      setGlobalError(errorMessage)
+      setShowErrorModal(true)
+      return
     }
 
     // Show confirmation modal
@@ -620,16 +624,31 @@ function AddQuestionPage() {
             ))}
 
             {/* Add Row Button - inside scrollable area, below last row */}
-            <button
-              onClick={handleAddRow}
-              className="w-full group relative"
-              data-tour="add-question-add-row"
-            >
-              <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
-              <div className="relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-gray-500 text-sm flex items-center justify-center gap-2 active:translate-y-1 transition-transform group-hover:border-purple-200 group-hover:text-purple-500">
-                <span className="text-lg font-black">+</span> Thêm dòng
-              </div>
-            </button>
+            {(() => {
+              const totalTruth = (userQuestionCounts.truth || 0) + rows.filter(r => r.category === 'truth' && r.content.trim()).length
+              const totalDare = (userQuestionCounts.dare || 0) + rows.filter(r => r.category === 'dare' && r.content.trim()).length
+              const isAtMaxLimit = totalTruth >= MAX_QUESTIONS_PER_CATEGORY && totalDare >= MAX_QUESTIONS_PER_CATEGORY
+              
+              return (
+                <button
+                  onClick={handleAddRow}
+                  disabled={isAtMaxLimit}
+                  className={`w-full group relative ${isAtMaxLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  data-tour="add-question-add-row"
+                  title={isAtMaxLimit ? 'Bạn đã đạt giới hạn tối đa 10 câu Truth và 10 câu Dare' : ''}
+                >
+                  <div className="absolute inset-0 bg-gray-200 rounded-xl translate-y-1"></div>
+                  <div className={`relative bg-white border-2 border-gray-200 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-transform ${
+                    isAtMaxLimit 
+                      ? 'text-gray-400' 
+                      : 'text-gray-500 active:translate-y-1 group-hover:border-purple-200 group-hover:text-purple-500'
+                  }`}>
+                    <span className="text-lg font-black">+</span> Thêm dòng
+                    {isAtMaxLimit && <span className="ml-2 text-xs">(Đã đạt giới hạn)</span>}
+                  </div>
+                </button>
+              )
+            })()}
           </div>
 
           {/* Summary Counts */}
@@ -641,8 +660,7 @@ function AddQuestionPage() {
               const isAtLimit = currentCount >= MAX_QUESTIONS_PER_CATEGORY
               const willExceedLimit = totalAfterAdd > MAX_QUESTIONS_PER_CATEGORY
               
-              if (count === 0 && !isAtLimit) return null
-              
+              // Always show badge for both Truth and Dare
               return (
                 <div 
                   key={cat.id} 
@@ -654,7 +672,7 @@ function AddQuestionPage() {
                       ? `Đã đạt giới hạn ${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel}` 
                       : willExceedLimit
                       ? `Sẽ vượt quá giới hạn ${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel}`
-                      : `${totalAfterAdd}/${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel}`
+                      : `${totalAfterAdd}/${MAX_QUESTIONS_PER_CATEGORY} câu ${cat.fullLabel} (đã có: ${currentCount}, thêm mới: ${count})`
                   }
                 >
                   {cat.label}: {totalAfterAdd}/{MAX_QUESTIONS_PER_CATEGORY}
