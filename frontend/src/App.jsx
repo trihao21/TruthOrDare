@@ -9,6 +9,7 @@ import ManagePage from './pages/ManagePage'
 import MissionLoginPage from './pages/MissionLoginPage'
 import MissionPage from './pages/MissionPage'
 import TimelinePage from './pages/TimelinePage'
+import SummaryPage from './pages/SummaryPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { api, authService } from './services'
 
@@ -213,6 +214,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/timeline" element={<TimelinePage />} />
+              <Route path="/summary" element={<SummaryPage />} />
               <Route 
                 path="/manage" 
                 element={

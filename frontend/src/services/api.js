@@ -71,8 +71,14 @@ const httpClient = {
       }
       
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Lỗi kết nối mạng' }));
-        throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -151,6 +157,10 @@ export const api = {
 
   async getQuestionsByCategory(category) {
     return httpClient.get(`/questions/${category}`);
+  },
+
+  async getUserQuestions(userId) {
+    return httpClient.get(`/questions/user/${userId}`);
   },
 
   async addQuestion(category, content) {

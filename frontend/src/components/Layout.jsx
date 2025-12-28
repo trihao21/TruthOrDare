@@ -90,20 +90,31 @@ function Layout({ children }) {
 
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center space-x-2 md:space-x-3">
-
             {(() => {
                 const identity = identityService.getAssignedIdentity()
                 return identity && (
-                  <Link 
-                    to="/add-question" 
-                    className={`px-4 py-2 border border-purple-500 rounded-lg text-sm font-medium transition-all  duration-200 ${
-                      isActive('/add-question') 
-                        ? 'text-purple-600 bg-purple-50 font-semibold' 
-                        : 'text-purple-600 hover:text-purple-600 hover:bg-purple-50'
-                    }`}
-                  >
-                    Thêm câu hỏi
-                  </Link>
+                  <>
+                    <Link 
+                      to="/add-question" 
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/add-question') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Thêm câu hỏi
+                    </Link>
+                    <Link 
+                      to="/summary" 
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/summary') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Câu hỏi của tôi
+                    </Link>
+                  </>
                 )
               })()}
               {/* Timeline button */}
@@ -164,17 +175,30 @@ function Layout({ children }) {
               {(() => {
                 const identity = identityService.getAssignedIdentity()
                 return identity && (
-                  <Link 
-                    to="/add-question" 
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive('/add-question') 
-                        ? 'text-purple-600 bg-purple-50 font-semibold' 
-                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                    }`}
-                  >
-                    Thêm câu hỏi
-                  </Link>
+                  <>
+                    <Link 
+                      to="/add-question" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/add-question') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Thêm câu hỏi
+                    </Link>
+                    <Link 
+                      to="/summary" 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive('/summary') 
+                          ? 'text-purple-600 bg-purple-50 font-semibold' 
+                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                    >
+                      Câu hỏi của tôi
+                    </Link>
+                  </>
                 )
               })()}
               

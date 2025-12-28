@@ -164,5 +164,19 @@ export const questionService = {
       console.error('Failed to get question stats:', error);
       return { total: 0, truth: 0, dare: 0 };
     }
+  },
+
+  // Get questions submitted by a specific user
+  async getUserQuestions(userId) {
+    try {
+      const response = await api.getUserQuestions(userId);
+      // Handle both array and object with questions property
+      return Array.isArray(response) ? response : (response.questions || []);
+    } catch (error) {
+      console.error(`Failed to fetch questions for user ${userId}:`, error);
+      // Return empty array instead of throwing - allows app to continue
+      // Backend validation will still catch limits
+      return [];
+    }
   }
 };
