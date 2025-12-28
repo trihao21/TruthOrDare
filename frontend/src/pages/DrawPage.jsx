@@ -36,46 +36,44 @@ function DrawPage() {
       }
     }
     
-    // Update immediately
+    // Update immediately on mount
     updateStatus()
-    // Update status frequently to reflect changes from other devices (every 500ms)
-    const interval = setInterval(updateStatus, 500)
+    
+    // Update status periodically to reflect changes from other devices (every 5 seconds)
+    // This is more server-friendly than polling every 500ms
+    const interval = setInterval(updateStatus, 5000)
     
     return () => clearInterval(interval)
   }, [drawnIdentity, showResult])
 
-  // Check if already has identity on mount (from backend)
+  // Check if already has identity on mount - show immediately from local storage
   useEffect(() => {
-    const checkIdentity = async () => {
+    // First, check local storage immediately (synchronous) to show result right away
+    const localExisting = identityService.getAssignedIdentity()
+    if (localExisting) {
+      setDrawnIdentity(localExisting)
+      setShowResult(true)
+    }
+    
+    // Then sync with backend in the background (async)
+    const syncWithBackend = async () => {
       try {
-        // Try to get from backend first
         const existing = await identityService.getCurrentIdentityFromBackend()
         if (existing) {
-          setDrawnIdentity(existing)
-          setShowResult(true)
-          
-          // Auto navigate if user hasn't manually logged out
-          if (!identityService.hasManualLogout()) {
-            // Small delay to show the identity card briefly before redirect
-            setTimeout(() => {
-              handleNavigateToHome()
-            }, 1500)
+          // Only update if different from local
+          if (!localExisting || localExisting.id !== existing.id) {
+            setDrawnIdentity(existing)
+            setShowResult(true)
           }
-          // If hasManualLogout is true, wait for user to click button
         }
       } catch (error) {
-        console.error('Error checking identity:', error)
-        // Fallback to local
-        const localExisting = identityService.getAssignedIdentity()
-        if (localExisting) {
-          setDrawnIdentity(localExisting)
-          setShowResult(true)
-        }
+        console.error('Error syncing identity with backend:', error)
+        // Keep local identity if backend fails
       }
     }
     
-    checkIdentity()
-  }, [handleNavigateToHome])
+    syncWithBackend()
+  }, [])
 
   const drawIdentity = async () => {
     if (isDrawing) return
@@ -96,13 +94,8 @@ function DrawPage() {
         setShowResult(true)
         setIsDrawing(false)
 
-        // Force update status immediately after drawing
-        try {
-          const status = await identityService.getAllIdentitiesStatus()
-          setIdentitiesStatus(status)
-        } catch (error) {
-          console.error('Error updating status after draw:', error)
-        }
+        // Status will be updated automatically by useEffect when drawnIdentity changes
+        // No need to force update here to reduce server load
 
         // Clear manual logout flag when drawing new identity
         identityService.clearManualLogout()

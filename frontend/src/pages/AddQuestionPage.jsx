@@ -72,9 +72,34 @@ function AddQuestionPage() {
 
   const handleSubmit = async () => {
     // Check identity (bốc thăm = đăng nhập)
-    const hasIdentity = identityService.hasIdentity()
-    if (!hasIdentity) {
+    const identity = identityService.getAssignedIdentity()
+    if (!identity) {
       setGlobalError('Bạn cần bốc thăm identity trước khi thêm câu hỏi')
+      setShowErrorModal(true)
+      return
+    }
+
+    // Auto-login with identity's account before submitting
+    try {
+      const username = identityService.getUsernameFromIdentity(identity)
+      if (!username) {
+        setGlobalError('Không thể xác định tài khoản từ identity. Vui lòng thử lại.')
+        setShowErrorModal(true)
+        return
+      }
+      
+      const password = '123456' // Default password for all player accounts
+      
+      // Check if already authenticated with the correct user
+      const currentUser = authService.getCurrentUser()
+      if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
+        // Clear manual logout flag when auto-login for submitting questions
+        identityService.clearManualLogout()
+        await authService.login(username, password)
+      }
+    } catch (error) {
+      console.error('Auto-login failed:', error)
+      setGlobalError(`Không thể đăng nhập với tài khoản ${identity.displayName}. Vui lòng thử lại.`)
       setShowErrorModal(true)
       return
     }
@@ -608,7 +633,7 @@ function AddQuestionPage() {
           },
           {
             target: '[data-tour="add-question-submit"]',
-            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần đăng nhập để thêm câu hỏi.',
+            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần bốc thăm identity để thêm câu hỏi.',
             allowClickOutside: false
           }
         ]}

@@ -101,38 +101,41 @@ function Layout({ children }) {
 
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center space-x-2 md:space-x-3">
-              {isAuthenticated ? (
-                <>
-                  {/* Timeline button - visible to all authenticated users */}
-                  <Link 
-                    to="/timeline" 
-                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              {/* Timeline button */}
+              <Link 
+                to="/timeline" 
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Timeline
+              </Link>
+              
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity ? (
+                  <>
+                    <div className="hidden sm:flex items-center gap-2">
+                      <span className="text-2xl">{identity.avatar}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {identity.displayName}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                    >
+                      Đăng xuất
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/"
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
                   >
-                    Timeline
+                    Bốc thăm
                   </Link>
-                  
-                  <div className="hidden sm:flex items-center gap-2">
-                    <span className="text-sm">{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
-                    <span className="text-sm font-medium text-gray-700">
-                      {currentUser?.displayName || currentUser?.username}
-                    </span>
-                  </div>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
-                  >
-                    Đăng xuất
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  Đăng nhập
-                </Link>
-              )}
+                )
+              })()}
             </div>
           </div>
 
@@ -191,35 +194,36 @@ function Layout({ children }) {
                 </Link>
               )}
 
-              {isAuthenticated && (
-                <div className="pt-2 border-t border-gray-200 space-y-2">
-                  <div className="px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <span>{currentUser?.role === 'admin' ? '👑' : '👤'}</span>
-                      <span className="text-sm font-medium text-gray-700">
-                        {currentUser?.displayName || currentUser?.username}
-                      </span>
+              {(() => {
+                const identity = identityService.getAssignedIdentity()
+                return identity ? (
+                  <div className="pt-2 border-t border-gray-200 space-y-2">
+                    <div className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{identity.avatar}</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          {identity.displayName}
+                        </span>
+                      </div>
                     </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                    >
+                      Đăng xuất
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                ) : (
+                  <Link
+                    to="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
                   >
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
-
-              {!isAuthenticated && (
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
-                >
-                  Đăng nhập
-                </Link>
-              )}
+                    Bốc thăm
+                  </Link>
+                )
+              })()}
             </div>
           )}
         </div>
