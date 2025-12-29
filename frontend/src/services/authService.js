@@ -31,9 +31,15 @@ export const authService = {
       this.isLoading = true;
       const response = await api.login(username, password);
       this.currentUser = response.user;
+      // Verify token was saved
+      const token = api.getToken();
+      if (!token) {
+        throw new Error('Token không được lưu sau khi đăng nhập');
+      }
       return { success: true, user: response.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.error('Login error:', error);
+      return { success: false, error: error.message || 'Đăng nhập thất bại' };
     } finally {
       this.isLoading = false;
     }

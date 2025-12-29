@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { questionService, authService } from '../services'
+import { api } from '../services/api.js'
 import { identityService } from '../services/identityService'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
@@ -46,13 +47,17 @@ function AddQuestionPage() {
         // Auto-login to get user info
         const currentUser = authService.getCurrentUser()
         if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
-          await authService.login(username, '123456')
+          // Get password from account info
+          const accountInfo = identityService.getAccountInfo()
+          const password = accountInfo?.password || '123456' // Fallback to default if accountInfo not available
+          await authService.login(username, password)
         }
 
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -140,41 +145,41 @@ function AddQuestionPage() {
     const emptyRows = rows.filter(r => !r.content.trim())
     const rowsWithErrors = validatedRows.filter(r => r.errors.length > 0)
 
-    if (hasErrors || emptyRows.length > 0) {
-      let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
+    // if (hasErrors || emptyRows.length > 0) {
+    //   let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
      
-      // List specific validation errors
-      if (rowsWithErrors.length > 0) {
-        const errorTypes = new Set()
-        rowsWithErrors.forEach(row => {
-          row.errors.forEach(err => {
-            if (err.includes('vượt quá')) {
-              errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
-            } else if (err.includes('lặp lại ký tự')) {
-              errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
-            } else if (err.includes('để trống')) {
-              // Already handled above
-            }
-          })
-        })
+    //   // List specific validation errors
+    //   if (rowsWithErrors.length > 0) {
+    //     const errorTypes = new Set()
+    //     rowsWithErrors.forEach(row => {
+    //       row.errors.forEach(err => {
+    //         if (err.includes('vượt quá')) {
+    //           errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
+    //         } else if (err.includes('lặp lại ký tự')) {
+    //           errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
+    //         } else if (err.includes('để trống')) {
+    //           // Already handled above
+    //         }
+    //       })
+    //     })
         
-        if (errorTypes.size > 0) {
-          errorTypes.forEach(errType => {
-            errorMessage += `• ${errType}\n`
-          })
-        }
-      }
+    //     if (errorTypes.size > 0) {
+    //       errorTypes.forEach(errType => {
+    //         errorMessage += `• ${errType}\n`
+    //       })
+    //     }
+    //   }
       
-      // Show current valid count
-      const truthCount = validRows.filter(r => r.category === 'truth').length
-      const dareCount = validRows.filter(r => r.category === 'dare').length
-      errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
-      errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
+    //   // Show current valid count
+    //   const truthCount = validRows.filter(r => r.category === 'truth').length
+    //   const dareCount = validRows.filter(r => r.category === 'dare').length
+    //   errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
+    //   errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
       
-      setGlobalError(errorMessage)
-      setShowErrorModal(true)
-      return
-    }
+    //   setGlobalError(errorMessage)
+    //   setShowErrorModal(true)
+    //   return
+    // }
 
     // Count new questions to be added in current submission
     const newTruthCount = validRows.filter(r => r.category === 'truth').length
@@ -190,14 +195,24 @@ function AddQuestionPage() {
       if (username) {
         const currentUser = authService.getCurrentUser()
         if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
-          await authService.login(username, '123456')
+          // Get password from account info
+          const accountInfo = identityService.getAccountInfo()
+          const password = accountInfo?.password || '123456' // Fallback to default if accountInfo not available
+          const loginResult = await authService.login(username, password)
+          if (!loginResult.success) {
+            // If login fails, show error and return - don't continue with wrong credentials
+            setGlobalError('Không thể đăng nhập. Vui lòng bốc thăm lại để nhận tài khoản mới.')
+            setShowErrorModal(true)
+            return
+          }
         }
         
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
           // Get current question counts (already existing in database)
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           existingTruthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           existingDareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -206,15 +221,44 @@ function AddQuestionPage() {
           
           // Check limits - user cannot add more than 10 questions per category
           if (existingTruthCount + newTruthCount > MAX_PER_CATEGORY) {
-            const exceeded = (existingTruthCount + newTruthCount) - MAX_PER_CATEGORY
-            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Truth. Hiện tại bạn đã có ${existingTruthCount} câu, và đang cố thêm ${newTruthCount} câu (vượt quá ${exceeded} câu).`)
+            const total = existingTruthCount + newTruthCount
+            const exceeded = total - MAX_PER_CATEGORY
+            // Format error message similar to minimum requirements
+            let errorMessage = `Truth:\nĐã điền: ${total}/${MAX_PER_CATEGORY}\nVượt quá: ${exceeded}`
+            
+            // Also show Dare status if available
+            const totalDare = existingDareCount + newDareCount
+            if (totalDare >= MAX_PER_CATEGORY) {
+              errorMessage += `\n\nDare: ${totalDare}/${MAX_PER_CATEGORY} ✓`
+            } else {
+              const missingDare = MAX_PER_CATEGORY - totalDare
+              errorMessage += `\n\nDare:\nĐã điền: ${totalDare}/${MAX_PER_CATEGORY}\nCòn thiếu: ${missingDare}`
+            }
+            
+            setGlobalError(errorMessage)
             setShowErrorModal(true)
             return
           }
           
           if (existingDareCount + newDareCount > MAX_PER_CATEGORY) {
-            const exceeded = (existingDareCount + newDareCount) - MAX_PER_CATEGORY
-            setGlobalError(`Bạn chỉ được thêm tối đa ${MAX_PER_CATEGORY} câu Dare. Hiện tại bạn đã có ${existingDareCount} câu, và đang cố thêm ${newDareCount} câu (vượt quá ${exceeded} câu).`)
+            const total = existingDareCount + newDareCount
+            const exceeded = total - MAX_PER_CATEGORY
+            // Format error message similar to minimum requirements
+            let errorMessage = ''
+            
+            // Show Truth status first
+            const totalTruth = existingTruthCount + newTruthCount
+            if (totalTruth >= MAX_PER_CATEGORY) {
+              errorMessage = `Truth: ${totalTruth}/${MAX_PER_CATEGORY} ✓`
+            } else {
+              const missingTruth = MAX_PER_CATEGORY - totalTruth
+              errorMessage = `Truth:\nĐã điền: ${totalTruth}/${MAX_PER_CATEGORY}\nCòn thiếu: ${missingTruth}`
+            }
+            
+            // Then show Dare with exceeded
+            errorMessage += `\n\nDare:\nĐã điền: ${total}/${MAX_PER_CATEGORY}\nVượt quá: ${exceeded}`
+            
+            setGlobalError(errorMessage)
             setShowErrorModal(true)
             return
           }
@@ -222,7 +266,14 @@ function AddQuestionPage() {
       }
     } catch (error) {
       console.error('Error checking limits:', error)
-      // Continue anyway, backend will validate
+      // If error is about authentication, show proper error
+      const errorMessage = error.message || error.toString()
+      if (errorMessage.includes('Phiên đăng nhập') || errorMessage.includes('credentials') || errorMessage.includes('Invalid')) {
+        setGlobalError('Không thể đăng nhập. Vui lòng bốc thăm lại để nhận tài khoản mới.')
+        setShowErrorModal(true)
+        return
+      }
+      // For other errors, continue anyway - backend will validate
     }
 
     // Check minimum requirements: total (existing + new) must have at least 10 truth and 10 dare
@@ -233,23 +284,41 @@ function AddQuestionPage() {
     
     // Only check minimum if user hasn't met the requirement yet
     if (totalTruthCount < MIN_REQUIRED || totalDareCount < MIN_REQUIRED) {
-      let errorMessage = 'Cần đáp ứng yêu cầu tối thiểu:\n\n'
-      
-      if (totalTruthCount < MIN_REQUIRED) {
-        const missingTruth = MIN_REQUIRED - totalTruthCount
-        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Truth (đã có: ${existingTruthCount}, thêm mới: ${newTruthCount}, tổng: ${totalTruthCount}, còn thiếu: ${missingTruth})\n`
-      } else {
-        errorMessage += `• Truth: ${totalTruthCount}/${MIN_REQUIRED} ✓\n`
+      // Store error data in a structured format for better UI display
+      const errorData = {
+        truth: {
+          current: totalTruthCount,
+          required: MIN_REQUIRED,
+          missing: totalTruthCount < MIN_REQUIRED ? MIN_REQUIRED - totalTruthCount : 0,
+          isComplete: totalTruthCount >= MIN_REQUIRED
+        },
+        dare: {
+          current: totalDareCount,
+          required: MIN_REQUIRED,
+          missing: totalDareCount < MIN_REQUIRED ? MIN_REQUIRED - totalDareCount : 0,
+          isComplete: totalDareCount >= MIN_REQUIRED
+        }
       }
       
-      if (totalDareCount < MIN_REQUIRED) {
-        const missingDare = MIN_REQUIRED - totalDareCount
-        errorMessage += `• Cần ít nhất ${MIN_REQUIRED} câu hỏi Dare (đã có: ${existingDareCount}, thêm mới: ${newDareCount}, tổng: ${totalDareCount}, còn thiếu: ${missingDare})`
+      // Create a simple text message for backward compatibility
+      let errorMessage = ''
+      if (!errorData.truth.isComplete) {
+        errorMessage += `Truth:\nĐã điền: ${errorData.truth.current}/${errorData.truth.required}\nCòn thiếu: ${errorData.truth.missing}`
       } else {
-        errorMessage += `• Dare: ${totalDareCount}/${MIN_REQUIRED} ✓`
+        errorMessage += `Truth: ${errorData.truth.current}/${errorData.truth.required} ✓`
       }
       
+      if (!errorData.dare.isComplete) {
+        if (errorMessage) errorMessage += '\n\n'
+        errorMessage += `Dare:\nĐã điền: ${errorData.dare.current}/${errorData.dare.required}\nCòn thiếu: ${errorData.dare.missing}`
+      } else {
+        if (errorMessage) errorMessage += '\n\n'
+        errorMessage += `Dare: ${errorData.dare.current}/${errorData.dare.required} ✓`
+      }
+      
+      // Store structured data in a way we can access it in the modal
       setGlobalError(errorMessage)
+      // Store error data in a ref or state for modal to use
       setShowErrorModal(true)
       return
     }
@@ -279,18 +348,38 @@ function AddQuestionPage() {
         return
       }
       
-      const password = '123456' // Default password for all player accounts
+      // Get password from account info (stored when user drew identity)
+      const accountInfo = identityService.getAccountInfo()
+      const password = accountInfo?.password || '123456' // Fallback to default if accountInfo not available
       
       // Check if already authenticated with the correct user
       const currentUser = authService.getCurrentUser()
       if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
         // Clear manual logout flag when auto-login for submitting questions
         identityService.clearManualLogout()
-        await authService.login(username, password)
+        const loginResult = await authService.login(username, password)
+        if (!loginResult.success) {
+          // If login fails, show error and return
+          setGlobalError('Không thể đăng nhập. Vui lòng bốc thăm lại để nhận tài khoản mới.')
+          setShowErrorModal(true)
+          return
+        }
+        // Verify authentication after login
+        if (!authService.isAuthenticated()) {
+          setGlobalError('Đăng nhập thành công nhưng không thể xác thực. Vui lòng thử lại.')
+          setShowErrorModal(true)
+          return
+        }
       }
     } catch (error) {
       console.error('Auto-login failed:', error)
-      setGlobalError(`Không thể đăng nhập với tài khoản ${identity.displayName}. Vui lòng thử lại.`)
+      // Check if error is about authentication
+      const errorMessage = error.message || error.toString()
+      if (errorMessage.includes('credentials') || errorMessage.includes('Invalid') || errorMessage.includes('Hết phiên')) {
+        setGlobalError('Không thể đăng nhập. Vui lòng bốc thăm lại để nhận tài khoản mới.')
+      } else {
+        setGlobalError(`Không thể đăng nhập với tài khoản ${identity.displayName}. Vui lòng thử lại.`)
+      }
       setShowErrorModal(true)
       return
     }
@@ -305,17 +394,29 @@ function AddQuestionPage() {
       return
     }
 
+    // Verify authentication before submitting
+    if (!authService.isAuthenticated()) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng thử lại.')
+      setShowErrorModal(true)
+      return
+    }
+    
+    // Verify token exists
+    const token = api.getToken()
+    if (!token) {
+      setGlobalError('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.')
+      setShowErrorModal(true)
+      return
+    }
+
     setLoading(true)
     setGlobalError('')
     
     try {
       // Submit all valid rows in parallel - Call API to send questions
-      console.log('Sending questions to API...', validRows.length, 'questions')
       const results = await Promise.all(
         validRows.map(row => questionService.addQuestion(row.category, row.content.trim()))
       )
-
-      console.log('API response:', results)
 
       // Check results and collect detailed errors
       const failedSubmissions = results.filter(result => !result.success)
@@ -334,7 +435,8 @@ function AddQuestionPage() {
           const updatedUser = authService.getCurrentUser()
           const userId = updatedUser?.id || updatedUser?._id
           if (userId) {
-            const userQuestions = await questionService.getUserQuestions(userId.toString())
+            // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
             // userQuestions is now always an array (empty if API fails)
             const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
             const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -351,7 +453,8 @@ function AddQuestionPage() {
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -806,24 +909,185 @@ function AddQuestionPage() {
               ✕
             </button>
 
-            <div className="text-center mb-4">
-              <div className="text-4xl mb-2">❌</div>
-              <h2 className="text-xl font-black text-gray-800">Lỗi</h2>
-            </div>
-
-            <div className="mb-6">
-              <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-                <p className="text-sm font-medium text-red-700 whitespace-pre-line text-left">{globalError}</p>
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-3 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
+              <h2 className="text-2xl font-black text-gray-800 mb-1">Lỗi</h2>
+              <p className="text-sm text-gray-500">Vui lòng kiểm tra lại thông tin</p>
             </div>
 
+            {/* Content - Parse and display structured error info */}
+            <div className="mb-6">
+              {(() => {
+                // Parse error message to extract Truth and Dare info
+                const lines = globalError.split('\n')
+                const truthSection = []
+                const dareSection = []
+                let currentSection = null
+                
+                lines.forEach(line => {
+                  if (line.startsWith('Truth:')) {
+                    currentSection = 'truth'
+                    truthSection.push(line)
+                  } else if (line.startsWith('Dare:')) {
+                    currentSection = 'dare'
+                    dareSection.push(line)
+                  } else if (currentSection === 'truth' && line.trim()) {
+                    truthSection.push(line)
+                  } else if (currentSection === 'dare' && line.trim()) {
+                    dareSection.push(line)
+                  }
+                })
+                
+                const parseSection = (section) => {
+                  if (section.length === 0) return null
+                  const firstLine = section[0]
+                  if (firstLine.includes('✓')) {
+                    // Complete
+                    const match = firstLine.match(/(\d+)\/(\d+)/)
+                    return { 
+                      type: firstLine.toLowerCase().includes('truth') ? 'truth' : 'dare',
+                      current: match ? parseInt(match[1]) : 0, 
+                      required: match ? parseInt(match[2]) : 10, 
+                      missing: 0,
+                      exceeded: 0,
+                      isComplete: true,
+                      isExceeded: false
+                    }
+                  } else {
+                    // Incomplete or Exceeded
+                    const currentMatch = section[1]?.match(/Đã điền: (\d+)\/(\d+)/)
+                    const missingMatch = section[2]?.match(/Còn thiếu: (\d+)/)
+                    const exceededMatch = section[2]?.match(/Vượt quá: (\d+)/)
+                    
+                    return {
+                      type: firstLine.toLowerCase().includes('truth') ? 'truth' : 'dare',
+                      current: currentMatch ? parseInt(currentMatch[1]) : 0,
+                      required: currentMatch ? parseInt(currentMatch[2]) : 10,
+                      missing: missingMatch ? parseInt(missingMatch[1]) : 0,
+                      exceeded: exceededMatch ? parseInt(exceededMatch[1]) : 0,
+                      isComplete: false,
+                      isExceeded: !!exceededMatch
+                    }
+                  }
+                }
+                
+                const truthData = parseSection(truthSection)
+                const dareData = parseSection(dareSection)
+                
+                // If parsing fails, show original message
+                if (!truthData && !dareData) {
+                  return (
+                    <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200">
+                      <p className="text-sm font-medium text-red-700 whitespace-pre-line text-left">{globalError}</p>
+                    </div>
+                  )
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    {/* Truth Card */}
+                    {truthData && (
+                      <div className={`p-4 rounded-xl border-2 ${
+                        truthData.isComplete 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold text-sm">T</span>
+                            <span className="font-bold text-gray-800">Truth</span>
+                          </div>
+                          {truthData.isComplete && (
+                            <span className="text-green-600 font-bold text-lg">✓</span>
+                          )}
+                        </div>
+                        {!truthData.isComplete && (
+                          <div className="space-y-1.5 mt-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">Đã điền:</span>
+                              <span className="font-bold text-gray-800">{truthData.current}/{truthData.required}</span>
+                            </div>
+                            {truthData.isExceeded ? (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-red-600 font-medium">Vượt quá:</span>
+                                <span className="font-bold text-red-600">{truthData.exceeded}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-red-600 font-medium">Còn thiếu:</span>
+                                <span className="font-bold text-red-600">{truthData.missing}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {truthData.isComplete && (
+                          <div className="text-sm text-green-700 font-medium mt-2">
+                            Đã đủ {truthData.current}/{truthData.required} câu
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Dare Card */}
+                    {dareData && (
+                      <div className={`p-4 rounded-xl border-2 ${
+                        dareData.isComplete 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center font-bold text-sm">D</span>
+                            <span className="font-bold text-gray-800">Dare</span>
+                          </div>
+                          {dareData.isComplete && (
+                            <span className="text-green-600 font-bold text-lg">✓</span>
+                          )}
+                        </div>
+                        {!dareData.isComplete && (
+                          <div className="space-y-1.5 mt-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600">Đã điền:</span>
+                              <span className="font-bold text-gray-800">{dareData.current}/{dareData.required}</span>
+                            </div>
+                            {dareData.isExceeded ? (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-red-600 font-medium">Vượt quá:</span>
+                                <span className="font-bold text-red-600">{dareData.exceeded}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-red-600 font-medium">Còn thiếu:</span>
+                                <span className="font-bold text-red-600">{dareData.missing}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {dareData.isComplete && (
+                          <div className="text-sm text-green-700 font-medium mt-2">
+                            Đã đủ {dareData.current}/{dareData.required} câu
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Action Button */}
             <div className="text-center">
               <button
                 onClick={() => {
                   setShowErrorModal(false)
                   setGlobalError('')
                 }}
-                className="bg-red-500 border-2 border-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
               >
                 Đã hiểu
               </button>
@@ -1013,7 +1277,7 @@ function AddQuestionPage() {
           },
           {
             target: '[data-tour="add-question-submit"]',
-            content: 'Sau khi đã thêm đủ ít nhất 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi. Lưu ý: Bạn cần bốc thăm identity để thêm câu hỏi.',
+            content: 'Sau khi đã thêm đủ tối đa 10 câu Truth và 10 câu Dare, nhấn nút "GỬI TẤT CẢ" để lưu các câu hỏi.',
             allowClickOutside: false
           }
         ]}

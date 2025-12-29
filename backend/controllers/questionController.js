@@ -1,16 +1,25 @@
 import Question from '../models/Question.js';
 
-// Get all questions
+// Get all questions - only return user's questions if authenticated
 export const getAllQuestions = async (req, res) => {
     try {
-        const questions = await Question.find().sort({ createdAt: -1 });
-        res.json(questions);
+        // If user is authenticated, only return their questions
+        if (req.userId) {
+            const userIdString = req.userId.toString();
+            const questions = await Question.find({ 
+                userId: userIdString 
+            }).sort({ createdAt: -1 });
+            return res.json(questions);
+        }
+        
+        // If not authenticated, return empty array (no questions visible)
+        res.json([]);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Get questions by type (truth/dare/lucky)
+// Get questions by type (truth/dare/lucky) - only return user's questions if authenticated
 export const getQuestionsByCategory = async (req, res) => {
     try {
         const { category } = req.params;
@@ -24,7 +33,20 @@ export const getQuestionsByCategory = async (req, res) => {
             'lucky': 'lucky'
         };
         const type = typeMap[category] || category.toLowerCase();
-        const questions = await Question.find({ type }).sort({ createdAt: -1 });
+        
+        // Build query
+        const query = { type };
+        
+        // If user is authenticated, only return their questions
+        if (req.userId) {
+            const userIdString = req.userId.toString();
+            query.userId = userIdString;
+        } else {
+            // If not authenticated, return empty array
+            return res.json([]);
+        }
+        
+        const questions = await Question.find(query).sort({ createdAt: -1 });
         res.json(questions);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -117,6 +139,176 @@ export const deleteQuestion = async (req, res) => {
 
         await Question.findByIdAndDelete(id);
         res.json({ message: 'Question deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Get random question by type, excluding drawn questions
+export const getRandomQuestion = async (req, res) => {
+    try {
+        const { type, excludeIds = [] } = req.body;
+
+        if (!type) {
+            return res.status(400).json({ error: 'Type is required' });
+        }
+
+        // Map type to lowercase
+        const typeMap = {
+            'TRUTH': 'truth',
+            'DARE': 'dare',
+            'LUCKY': 'lucky',
+            'truth': 'truth',
+            'dare': 'dare',
+            'lucky': 'lucky'
+        };
+        const normalizedType = typeMap[type] || type.toLowerCase();
+
+        // Build query: find questions of this type that are not drawn and not in excludeIds
+        const query = {
+            type: normalizedType,
+            isDrawn: false
+        };
+
+        // Exclude specific question IDs if provided
+        if (excludeIds && excludeIds.length > 0) {
+            query._id = { $nin: excludeIds };
+        }
+
+        // Get random question
+        const questions = await Question.aggregate([
+            { $match: query },
+            { $sample: { size: 1 } }
+        ]);
+
+        if (!questions || questions.length === 0) {
+            // If no undrawn questions, try to get from the other type (truth <-> dare)
+            // Only fallback for truth and dare, not for lucky
+            const fallbackType = normalizedType === 'truth' ? 'dare' : normalizedType === 'dare' ? 'truth' : null;
+            
+            if (fallbackType) {
+                const fallbackQuery = {
+                    type: fallbackType,
+                    isDrawn: false
+                };
+                
+                if (excludeIds && excludeIds.length > 0) {
+                    fallbackQuery._id = { $nin: excludeIds };
+                }
+                
+                const fallbackQuestions = await Question.aggregate([
+                    { $match: fallbackQuery },
+                    { $sample: { size: 1 } }
+                ]);
+                
+                if (fallbackQuestions && fallbackQuestions.length > 0) {
+                    // Return fallback question
+                    return res.json({ question: fallbackQuestions[0] });
+                }
+                
+                // If fallback also has no questions, check if both types are exhausted
+                // Only reset if BOTH types are exhausted
+                const truthCount = await Question.countDocuments({ type: 'truth', isDrawn: false });
+                const dareCount = await Question.countDocuments({ type: 'dare', isDrawn: false });
+                
+                if (truthCount === 0 && dareCount === 0) {
+                    // Both types exhausted, reset both
+                    await Question.updateMany(
+                        { type: { $in: ['truth', 'dare'] } },
+                        { $set: { isDrawn: false } }
+                    );
+                    
+                    // Try again with original type after reset
+                    const retryQuery = {
+                        type: normalizedType,
+                        isDrawn: false
+                    };
+                    
+                    if (excludeIds && excludeIds.length > 0) {
+                        retryQuery._id = { $nin: excludeIds };
+                    }
+                    
+                    const retryQuestions = await Question.aggregate([
+                        { $match: retryQuery },
+                        { $sample: { size: 1 } }
+                    ]);
+                    
+                    if (retryQuestions && retryQuestions.length > 0) {
+                        return res.json({ question: retryQuestions[0] });
+                    }
+                } else {
+                    // One type exhausted but other still has questions, return fallback even if empty
+                    // This should not happen, but handle gracefully
+                    return res.status(404).json({ error: `No questions available. ${normalizedType} exhausted, ${fallbackType} also exhausted.` });
+                }
+            }
+            
+            // For lucky or other types, just return error
+            return res.status(404).json({ error: 'No questions found for this type' });
+        }
+
+        res.json({ question: questions[0] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Mark question as drawn
+export const markAsDrawn = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const question = await Question.findByIdAndUpdate(
+            id,
+            { $set: { isDrawn: true } },
+            { new: true }
+        );
+
+        if (!question) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+
+        res.json({ success: true, question });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Get question counts by type (total and drawn)
+export const getQuestionCounts = async (req, res) => {
+    try {
+        const counts = await Question.aggregate([
+            {
+                $group: {
+                    _id: '$type',
+                    total: { $sum: 1 },
+                    drawn: {
+                        $sum: {
+                            $cond: [{ $eq: ['$isDrawn', true] }, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        // Format response
+        const result = {
+            truth: { total: 0, drawn: 0 },
+            dare: { total: 0, drawn: 0 },
+            lucky: { total: 0, drawn: 0 }
+        };
+
+        counts.forEach(item => {
+            const type = item._id;
+            if (result[type]) {
+                result[type] = {
+                    total: item.total,
+                    drawn: item.drawn
+                };
+            }
+        });
+
+        res.json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

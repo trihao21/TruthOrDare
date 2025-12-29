@@ -79,7 +79,7 @@ function TimelinePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 py-4 sm:py-6 md:py-8 lg:py-12 px-3 sm:px-4 md:px-6 overflow-x-hidden relative">
-      {/* Animated gradient background */}
+      {/* Animated gradient background ttt*/}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-purple-900/90 to-pink-900/90"></div>
       
       {/* Animated mesh gradient overlay */}

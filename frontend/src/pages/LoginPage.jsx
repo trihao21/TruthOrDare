@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { authService, utilService } from '../services'
+import { authService, utilService, identityService } from '../services'
 import TourGuide from '../components/TourGuide'
 
 function LoginPage() {
@@ -32,7 +32,20 @@ function LoginPage() {
       const result = await authService.login(username, password)
       
       if (result.success) {
-        navigate(from, { replace: true })
+        // Check if this username has an assigned identity
+        // If username matches player pattern (player1, player2, etc.), redirect to add-question
+        const isPlayerAccount = /^player\d+$/.test(username.toLowerCase())
+        
+        // Also check if there's an identity assigned in localStorage
+        const assignedIdentity = identityService.getAssignedIdentity()
+        const accountInfo = identityService.getAccountInfo()
+        
+        // If user has identity or is a player account, redirect to add-question
+        if (assignedIdentity || (isPlayerAccount && accountInfo)) {
+          navigate('/add-question', { replace: true })
+        } else {
+          navigate(from, { replace: true })
+        }
       } else {
         setError(result.error || 'Đăng nhập thất bại')
       }
@@ -60,13 +73,18 @@ function LoginPage() {
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Đăng nhập
+            Đăng nhập
           </h1>
-          <p className="text-gray-600">
-            Nhập thông tin tài khoản để đăng nhập
-          </p>
+         
         </div>
 
-        {/* Login Form */}
+        {/* Quick Login Buttons */}
+    
+
+        {/* Divider */}
+      
+
+        {/* Manual Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4" data-tour="login-form">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -20,6 +20,12 @@ const QuestionSchema = new mongoose.Schema(
             trim: true,
             minlength: 5,
             maxlength: 300
+        },
+
+        isDrawn: {
+            type: Boolean,
+            default: false,
+            index: true
         }
     },
     {

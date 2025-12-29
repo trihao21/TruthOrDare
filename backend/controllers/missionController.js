@@ -45,7 +45,6 @@ export const getMissions = async (req, res) => {
     
     // If no missions exist, create default ones
     if (missions.length === 0) {
-      console.log('No missions found, creating default missions...');
       const now = new Date();
       const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
       const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -83,7 +82,6 @@ export const getMissions = async (req, res) => {
 
       try {
         missions = await Mission.insertMany(defaultMissions);
-        console.log(`Created ${missions.length} default missions`);
       } catch (insertError) {
         console.error('Error creating default missions:', insertError);
         // If insert fails, return empty array instead of throwing
@@ -91,7 +89,6 @@ export const getMissions = async (req, res) => {
       }
     }
     
-    console.log(`Returning ${missions.length} missions`);
     res.json({ missions });
   } catch (error) {
     console.error('Error in getMissions:', error);
@@ -268,7 +265,6 @@ export const notifyMissionUnlock = async (req, res) => {
       });
     } else {
       // Don't fail the request if email fails, just log it
-      console.warn('Failed to send unlock email:', emailResult.error);
       res.json({ 
         success: false, 
         message: 'Mission unlock detected but email notification failed',
