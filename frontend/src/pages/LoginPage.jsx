@@ -32,18 +32,33 @@ function LoginPage() {
       const result = await authService.login(username, password)
       
       if (result.success) {
-        // Check if this username has an assigned identity
-        // If username matches player pattern (player1, player2, etc.), redirect to add-question
+        // Check if this username matches player pattern (player1, player2, etc.)
+        // Player accounts are always created from identity assignment, so redirect to add-question
         const isPlayerAccount = /^player\d+$/.test(username.toLowerCase())
         
-        // Also check if there's an identity assigned in localStorage
-        const assignedIdentity = identityService.getAssignedIdentity()
-        const accountInfo = identityService.getAccountInfo()
+        if (isPlayerAccount) {
+          // Try to sync identity from backend (based on deviceId)
+          // This ensures identity is available in localStorage for the app to use
+          try {
+            await identityService.getCurrentIdentityFromBackend()
+          } catch (error) {
+            console.error('Error syncing identity from backend:', error)
+            // Continue anyway - identity might be in localStorage already
+          }
+          
+          // Always redirect player accounts to add-question
+          navigate('/add-question', { replace: true })
+          return
+        }
         
-        // If user has identity or is a player account, redirect to add-question
-        if (assignedIdentity || (isPlayerAccount && accountInfo)) {
+        // For non-player accounts, check if there's an identity assigned in localStorage
+        const assignedIdentity = identityService.getAssignedIdentity()
+        
+        // If user has identity, redirect to add-question
+        if (assignedIdentity) {
           navigate('/add-question', { replace: true })
         } else {
+          // Otherwise redirect to the original destination or home
           navigate(from, { replace: true })
         }
       } else {
