@@ -180,7 +180,7 @@ export const identityService = {
     }))
   },
 
-  // Get current identity from backend
+  // Get current identity from backend (by deviceId)
   async getCurrentIdentityFromBackend() {
     try {
       const response = await api.getCurrentIdentity()
@@ -202,6 +202,37 @@ export const identityService = {
       console.error('Error getting current identity from backend:', error)
       // Fallback to local
       return this.getAssignedIdentity()
+    }
+  },
+
+  // Get identity assignment by username
+  // USE CASE: User đã bốc thăm ở thiết bị A, bây giờ đăng nhập ở thiết bị B
+  // Method này lấy identity từ backend dựa trên username (không phải deviceId)
+  // Backend sẽ tự động update deviceId để thiết bị B cũng có identity này
+  // Sau đó lưu identity và account info vào localStorage của thiết bị B
+  async getIdentityByUsername(username) {
+    try {
+      const response = await api.getIdentityByUsername(username)
+      if (response.success) {
+        if (response.identity) {
+          // Lưu identity vào localStorage của thiết bị hiện tại
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(response.identity))
+          
+          // Lưu account info (username, password) vào localStorage
+          // Điều này cho phép app sử dụng thông tin đăng nhập sau này
+          if (response.account) {
+            localStorage.setItem('hipdam_account_info', JSON.stringify(response.account))
+          }
+          
+          console.log(`Identity synced for username ${username} on new device`)
+          return response.identity
+        }
+        // Không tìm thấy identity assignment
+        return null
+      }
+    } catch (error) {
+      console.error('Error getting identity by username from backend:', error)
+      return null
     }
   }
 }
