@@ -125,8 +125,8 @@ export const questionService = {
     } else {
       const trimmedContent = content.trim();
       
-      if (trimmedContent.length > 500) {
-        errors.push(`Câu hỏi không được vượt quá 500 ký tự (hiện tại: ${trimmedContent.length})`);
+      if (trimmedContent.length > 1000) {
+        errors.push(`Câu hỏi không được vượt quá 1000 ký tự (hiện tại: ${trimmedContent.length})`);
       }
 
       // Check for meaningful content (not just repeated characters)

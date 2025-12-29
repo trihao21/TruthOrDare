@@ -19,7 +19,7 @@ const QuestionSchema = new mongoose.Schema(
             required: true,
             trim: true,
             minlength: 5,
-            maxlength: 300
+            maxlength: 1000
         },
 
         isDrawn: {

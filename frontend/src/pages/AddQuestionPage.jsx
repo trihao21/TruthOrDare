@@ -141,47 +141,49 @@ function AddQuestionPage() {
     setRows(validatedRows)
 
     // Check for empty rows and collect error details
-    const validRows = rows.filter(r => r.content.trim())
-    const emptyRows = rows.filter(r => !r.content.trim())
+    const validRows = validatedRows.filter(r => r.content.trim() && r.errors.length === 0)
+    const emptyRows = validatedRows.filter(r => !r.content.trim())
     const rowsWithErrors = validatedRows.filter(r => r.errors.length > 0)
 
-    // if (hasErrors || emptyRows.length > 0) {
-    //   let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n'
+    // Check validation errors FIRST - must fix before submitting
+    if (rowsWithErrors.length > 0) {
+      let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n\n'
      
-    //   // List specific validation errors
-    //   if (rowsWithErrors.length > 0) {
-    //     const errorTypes = new Set()
-    //     rowsWithErrors.forEach(row => {
-    //       row.errors.forEach(err => {
-    //         if (err.includes('vượt quá')) {
-    //           errorTypes.add('Câu hỏi quá dài (tối đa 500 ký tự)')
-    //         } else if (err.includes('lặp lại ký tự')) {
-    //           errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa')
-    //         } else if (err.includes('để trống')) {
-    //           // Already handled above
-    //         }
-    //       })
-    //     })
-        
-    //     if (errorTypes.size > 0) {
-    //       errorTypes.forEach(errType => {
-    //         errorMessage += `• ${errType}\n`
-    //       })
-    //     }
-    //   }
+      // List specific validation errors
+      const errorTypes = new Set()
+      rowsWithErrors.forEach(row => {
+        row.errors.forEach(err => {
+          if (err.includes('vượt quá') || err.includes('1000 ký tự')) {
+            errorTypes.add('Câu hỏi quá dài (tối đa 1000 ký tự)')
+          } else if (err.includes('lặp lại ký tự') || err.includes('có ý nghĩa')) {
+            errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa, không chỉ lặp lại ký tự')
+          } else if (err.includes('để trống')) {
+            errorTypes.add('Câu hỏi không được để trống')
+          } else if (err.includes('Danh mục')) {
+            errorTypes.add('Danh mục phải là Truth hoặc Dare')
+          }
+        })
+      })
       
-    //   // Show current valid count
-    //   const truthCount = validRows.filter(r => r.category === 'truth').length
-    //   const dareCount = validRows.filter(r => r.category === 'dare').length
-    //   errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
-    //   errorMessage += `\nCần ít nhất 10 câu Truth và 10 câu Dare để có thể gửi.`
+      if (errorTypes.size > 0) {
+        errorTypes.forEach(errType => {
+          errorMessage += `• ${errType}\n`
+        })
+      }
       
-    //   setGlobalError(errorMessage)
-    //   setShowErrorModal(true)
-    //   return
-    // }
+      // Show current valid count
+      const truthCount = validRows.filter(r => r.category === 'truth').length
+      const dareCount = validRows.filter(r => r.category === 'dare').length
+      if (validRows.length > 0) {
+        errorMessage += `\nHiện tại bạn có ${validRows.length} ${validRows.length === 1 ? 'câu hỏi hợp lệ' : 'câu hỏi hợp lệ'} (Truth: ${truthCount}, Dare: ${dareCount})`
+      }
+      
+      setGlobalError(errorMessage)
+      setShowErrorModal(true)
+      return
+    }
 
-    // Count new questions to be added in current submission
+    // Count new questions to be added in current submission (only valid rows without errors)
     const newTruthCount = validRows.filter(r => r.category === 'truth').length
     const newDareCount = validRows.filter(r => r.category === 'dare').length
 
@@ -384,12 +386,52 @@ function AddQuestionPage() {
       return
     }
 
-    // Filter valid rows (non-empty content) from current rows state
-    // Note: Minimum requirements (10 truth + 10 dare) already checked in handleSubmit
-    const validRows = rows.filter(r => r.content.trim())
+    // Re-validate all rows before submitting (in case user modified them after confirmation modal opened)
+    const validatedRows = rows.map(row => {
+      const validation = questionService.validateQuestion(row.content, row.category)
+      return { ...row, errors: validation.errors }
+    })
+    
+    // Update rows with latest validation errors
+    setRows(validatedRows)
+    
+    // Filter valid rows (non-empty content AND no validation errors)
+    const validRows = validatedRows.filter(r => r.content.trim() && r.errors.length === 0)
+    const rowsWithErrors = validatedRows.filter(r => r.errors.length > 0)
+
+    // Check if there are validation errors
+    if (rowsWithErrors.length > 0) {
+      let errorMessage = 'Vui lòng sửa các lỗi sau trước khi gửi:\n\n'
+     
+      // List specific validation errors
+      const errorTypes = new Set()
+      rowsWithErrors.forEach(row => {
+        row.errors.forEach(err => {
+          if (err.includes('vượt quá') || err.includes('1000 ký tự')) {
+            errorTypes.add('Câu hỏi quá dài (tối đa 1000 ký tự)')
+          } else if (err.includes('lặp lại ký tự') || err.includes('có ý nghĩa')) {
+            errorTypes.add('Câu hỏi cần có nội dung có ý nghĩa, không chỉ lặp lại ký tự')
+          } else if (err.includes('để trống')) {
+            errorTypes.add('Câu hỏi không được để trống')
+          } else if (err.includes('Danh mục')) {
+            errorTypes.add('Danh mục phải là Truth hoặc Dare')
+          }
+        })
+      })
+      
+      if (errorTypes.size > 0) {
+        errorTypes.forEach(errType => {
+          errorMessage += `• ${errType}\n`
+        })
+      }
+      
+      setGlobalError(errorMessage)
+      setShowErrorModal(true)
+      return
+    }
 
     if (validRows.length === 0) {
-      setGlobalError('Vui lòng nhập ít nhất một câu hỏi')
+      setGlobalError('Vui lòng nhập ít nhất một câu hỏi hợp lệ')
       setShowErrorModal(true)
       return
     }
@@ -671,7 +713,7 @@ function AddQuestionPage() {
                           className={`centered-textarea flex-1 bg-transparent border-none outline-none text-gray-700 text-base font-medium placeholder-gray-400 resize-none pr-8 ${
                             row.errors.length > 0 ? 'text-red-600' : ''
                           }`}
-                          maxLength={500}
+                          maxLength={1000}
                           data-tour="add-question-input"
                           onInput={(e) => {
                             const target = e.target;
@@ -1134,7 +1176,7 @@ function AddQuestionPage() {
             <div className="mt-6 p-4 bg-yellow-50 rounded-xl">
               <h3 className="text-sm font-bold text-yellow-800 mb-2">� Quy tắc hviết câu hỏi:</h3>
               <ul className="text-xs text-yellow-700 space-y-1">
-                <li>• Tối đa 500 ký tự</li>
+                <li>• Tối đa 1000 ký tự</li>
                 <li>• Nội dung phải có ý nghĩa, không lặp lại ký tự</li>
                 <li>• Truth: Khám phá suy nghĩ, cảm xúc</li>
                 <li>• Dare: Vui nhộn, không nguy hiểm</li>
@@ -1267,7 +1309,7 @@ function AddQuestionPage() {
           },
           {
             target: '[data-tour="add-question-input"]',
-            content: 'Nhập nội dung câu hỏi vào đây. Tối đa 500 ký tự. Bạn có thể nhấn nút X màu đỏ để xóa nội dung nếu cần.',
+            content: 'Nhập nội dung câu hỏi vào đây. Tối đa 1000 ký tự. Bạn có thể nhấn nút X màu đỏ để xóa nội dung nếu cần.',
             allowClickOutside: false
           },
           {
