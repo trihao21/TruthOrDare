@@ -122,6 +122,90 @@ export const deleteQuestion = async (req, res) => {
     }
 };
 
+// Get random question by type, excluding drawn questions
+export const getRandomQuestion = async (req, res) => {
+    try {
+        const { type, excludeIds = [] } = req.body;
+
+        if (!type) {
+            return res.status(400).json({ error: 'Type is required' });
+        }
+
+        // Map type to lowercase
+        const typeMap = {
+            'TRUTH': 'truth',
+            'DARE': 'dare',
+            'LUCKY': 'lucky',
+            'truth': 'truth',
+            'dare': 'dare',
+            'lucky': 'lucky'
+        };
+        const normalizedType = typeMap[type] || type.toLowerCase();
+
+        // Build query: find questions of this type that are not drawn and not in excludeIds
+        const query = {
+            type: normalizedType,
+            isDrawn: false
+        };
+
+        // Exclude specific question IDs if provided
+        if (excludeIds && excludeIds.length > 0) {
+            query._id = { $nin: excludeIds };
+        }
+
+        // Get random question
+        const questions = await Question.aggregate([
+            { $match: query },
+            { $sample: { size: 1 } }
+        ]);
+
+        if (!questions || questions.length === 0) {
+            // If no undrawn questions, reset all questions of this type and try again
+            await Question.updateMany(
+                { type: normalizedType },
+                { $set: { isDrawn: false } }
+            );
+
+            // Try again after reset
+            const retryQuestions = await Question.aggregate([
+                { $match: { type: normalizedType } },
+                { $sample: { size: 1 } }
+            ]);
+
+            if (!retryQuestions || retryQuestions.length === 0) {
+                return res.status(404).json({ error: 'No questions found for this type' });
+            }
+
+            return res.json({ question: retryQuestions[0] });
+        }
+
+        res.json({ question: questions[0] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Mark question as drawn
+export const markAsDrawn = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const question = await Question.findByIdAndUpdate(
+            id,
+            { $set: { isDrawn: true } },
+            { new: true }
+        );
+
+        if (!question) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+
+        res.json({ success: true, question });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Seed default questions
 export const seedDefaultQuestions = async (req, res) => {
     try {

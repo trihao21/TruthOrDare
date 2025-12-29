@@ -5,7 +5,9 @@ import {
     getUserQuestions,
     addQuestion,
     deleteQuestion,
-    seedDefaultQuestions
+    seedDefaultQuestions,
+    getRandomQuestion,
+    markAsDrawn
 } from '../controllers/questionController.js';
 import { authenticate } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
@@ -14,6 +16,12 @@ const router = express.Router();
 
 // Seed default questions (must be before /:category route)
 router.post('/seed/default', seedDefaultQuestions);
+
+// Random question endpoint (must be before /:category route to avoid conflict)
+router.post('/random', getRandomQuestion);
+
+// Mark question as drawn (must be before /:category route)
+router.patch('/:id/drawn', markAsDrawn);
 
 // Public routes - anyone can view questions
 router.get('/', getAllQuestions);
