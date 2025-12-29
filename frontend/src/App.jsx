@@ -31,7 +31,7 @@ function App() {
     const maxLoadingTimer = setTimeout(() => {
       if (isMounted) {
         setLoading(false)
-        setError('Server lỏ nên hay bị lỗi. Mọi người bấm nút Thử lại bên dưới để reload nha!')
+        setError('Server lỏ nên hay bị lỗi. Lưu ý khi bấm nút "Thử lại" sẽ không lưu giá trị bạn đang nhập nếu chưa được gửi!')
         setQuestions({
           'TRUTH': [],
           'DARE': [],
