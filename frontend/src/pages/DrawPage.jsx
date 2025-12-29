@@ -133,6 +133,8 @@ function DrawPage() {
         identityService.clearManualLogout()
         
         // Don't auto-navigate - let user see account info modal first
+        
+        // Don't auto-navigate - let user see account info modal first
       } catch (error) {
         console.error('Error drawing identity:', error)
         setIsDrawing(false)
@@ -458,7 +460,7 @@ function DrawPage() {
             {/* Warning */}
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 mb-6">
               <p className="text-xs text-yellow-800 text-center">
-                ⚠️ <strong>Lưu ý:</strong> Mật khẩu này sẽ được tạo mới mỗi lần bốc thăm. Vui lòng lưu lại để đăng nhập ở thiết bị khác.
+                ⚠️ <strong>Lưu ý:</strong> Lưu lại mật khẩu để đăng nhập ở thiết bị khác!   
               </p>
             </div>
 
@@ -478,7 +480,12 @@ function DrawPage() {
               >
                 Đến trang đặt câu hỏi
               </button>
-             
+              <button
+                onClick={() => setShowAccountModal(false)}
+                className="w-full px-6 py-3 bg-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-300 transition-all duration-300"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>

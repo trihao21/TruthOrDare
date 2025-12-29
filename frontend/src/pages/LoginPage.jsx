@@ -3,17 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { authService, utilService, identityService } from '../services'
 import TourGuide from '../components/TourGuide'
 
-const defaultAccounts = [
-  { username: 'admin', displayName: 'Quản trị viên', role: 'admin', password: 'admin123' },
-  { username: 'player1', displayName: 'Người chơi 1', role: 'user', password: '123456' },
-  { username: 'player2', displayName: 'Người chơi 2', role: 'user', password: '123456' },
-  { username: 'player3', displayName: 'Người chơi 3', role: 'user', password: '123456' },
-  { username: 'player4', displayName: 'Người chơi 4', role: 'user', password: '123456' },
-  { username: 'player5', displayName: 'Người chơi 5', role: 'user', password: '123456' },
-  { username: 'player6', displayName: 'Người chơi 6', role: 'user', password: '123456' },
-  { username: 'player7', displayName: 'Người chơi 7', role: 'user', password: '123456' }
-]
-
 function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -35,11 +24,6 @@ function LoginPage() {
     if (error) setError('')
   }
 
-  const handleQuickLogin = async (username, password) => {
-    setFormData({ username, password })
-    await handleLogin(username, password)
-  }
-
   const handleLogin = async (username, password) => {
     try {
       setLoading(true)
@@ -48,18 +32,57 @@ function LoginPage() {
       const result = await authService.login(username, password)
       
       if (result.success) {
-        // Check if this username has an assigned identity
-        // If username matches player pattern (player1, player2, etc.), redirect to add-question
+        // Check if this username matches player pattern (player1, player2, etc.)
+        // Player accounts are always created from identity assignment
         const isPlayerAccount = /^player\d+$/.test(username.toLowerCase())
         
-        // Also check if there's an identity assigned in localStorage
-        const assignedIdentity = identityService.getAssignedIdentity()
-        const accountInfo = identityService.getAccountInfo()
+        if (isPlayerAccount) {
+          // USE CASE: User đã bốc thăm ở thiết bị A, bây giờ đăng nhập ở thiết bị B
+          // Cần sync identity từ backend dựa trên username (không phải deviceId)
+          // Backend sẽ tự động update deviceId để thiết bị B cũng có identity này
+          try {
+            const identity = await identityService.getIdentityByUsername(username)
+            
+            if (!identity) {
+              // Không tìm thấy identity assignment cho username này
+              // Có thể user chưa bốc thăm hoặc có vấn đề với database
+              setError('Không tìm thấy thông tin identity. Vui lòng bốc thăm lại hoặc liên hệ hỗ trợ.')
+              setLoading(false)
+              return
+            }
+            
+            // Identity đã được sync vào localStorage, có thể tiếp tục
+            console.log('Identity synced successfully for user:', username)
+          } catch (error) {
+            console.error('Error syncing identity from backend:', error)
+            // Nếu sync thất bại, thử fallback: check localStorage hoặc get by deviceId
+            const localIdentity = identityService.getAssignedIdentity()
+            if (!localIdentity) {
+              // Không có identity trong localStorage, thử get by deviceId (trường hợp cùng device)
+              try {
+                await identityService.getCurrentIdentityFromBackend()
+              } catch (fallbackError) {
+                console.error('Fallback sync also failed:', fallbackError)
+                setError('Không thể đồng bộ thông tin identity. Vui lòng thử lại hoặc bốc thăm lại.')
+                setLoading(false)
+                return
+              }
+            }
+          }
+          
+          // Player accounts luôn redirect đến add-question sau khi sync identity thành công
+          navigate('/add-question', { replace: true })
+          return
+        }
         
-        // If user has identity or is a player account, redirect to add-question
-        if (assignedIdentity || (isPlayerAccount && accountInfo)) {
+        // For non-player accounts (admin, etc.), check if there's an identity assigned in localStorage
+        const assignedIdentity = identityService.getAssignedIdentity()
+        
+        // If user has identity, redirect to add-question
+        if (assignedIdentity) {
           navigate('/add-question', { replace: true })
         } else {
+          // Otherwise redirect to the original destination or home
           navigate(from, { replace: true })
         }
       } else {
@@ -88,6 +111,7 @@ function LoginPage() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Đăng nhập
             Đăng nhập
           </h1>
          
@@ -166,18 +190,13 @@ function LoginPage() {
         tourName="login"
         steps={[
           {
-            target: '[data-tour="login-quick-accounts"]',
-            content: 'Chào mừng bạn đến với Hipdam! Đây là các tài khoản có sẵn. Bạn có thể chọn một tài khoản để đăng nhập nhanh, hoặc đăng nhập thủ công ở bên dưới.',
-            allowClickOutside: false
-          },
-          {
             target: '[data-tour="login-form"]',
-            content: 'Nếu bạn muốn đăng nhập thủ công, hãy nhập tên đăng nhập và mật khẩu vào đây. Hoặc bạn có thể sử dụng các tài khoản có sẵn ở trên.',
+            content: 'Nhập tên đăng nhập và mật khẩu của bạn để đăng nhập vào hệ thống.',
             allowClickOutside: false
           },
           {
             target: '[data-tour="login-submit-button"]',
-            content: 'Sau khi nhập đầy đủ thông tin, nhấn nút "Đăng nhập" để bắt đầu trải nghiệm. Sau khi đăng nhập, bạn sẽ được chuyển đến trang chủ để quay vòng quay!',
+            content: 'Sau khi nhập đầy đủ thông tin, nhấn nút "Đăng nhập" để bắt đầu trải nghiệm.',
             allowClickOutside: false
           }
         ]}

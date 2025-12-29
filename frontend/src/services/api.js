@@ -199,6 +199,10 @@ export const api = {
     return httpClient.get('/identities/current');
   },
 
+  async getIdentityByUsername(username) {
+    return httpClient.get(`/identities/username/${username}`);
+  },
+
   async resetAllIdentities() {
     return httpClient.delete('/identities/reset');
   },
