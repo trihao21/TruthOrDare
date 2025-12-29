@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { questionService, authService } from '../services'
+import { api } from '../services/api.js'
 import { identityService } from '../services/identityService'
 import TourGuide from '../components/TourGuide'
 import { tourService } from '../services/tourService'
@@ -354,7 +355,19 @@ function AddQuestionPage() {
       if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
         // Clear manual logout flag when auto-login for submitting questions
         identityService.clearManualLogout()
-        await authService.login(username, password)
+        const loginResult = await authService.login(username, password)
+        if (!loginResult.success) {
+          // If login fails, show error and return
+          setGlobalError('Không thể đăng nhập. Vui lòng bốc thăm lại để nhận tài khoản mới.')
+          setShowErrorModal(true)
+          return
+        }
+        // Verify authentication after login
+        if (!authService.isAuthenticated()) {
+          setGlobalError('Đăng nhập thành công nhưng không thể xác thực. Vui lòng thử lại.')
+          setShowErrorModal(true)
+          return
+        }
       }
     } catch (error) {
       console.error('Auto-login failed:', error)
@@ -379,12 +392,30 @@ function AddQuestionPage() {
       return
     }
 
+    // Verify authentication before submitting
+    if (!authService.isAuthenticated()) {
+      setGlobalError('Phiên đăng nhập đã hết hạn. Vui lòng thử lại.')
+      setShowErrorModal(true)
+      return
+    }
+    
+    // Verify token exists
+    const token = api.getToken()
+    if (!token) {
+      setGlobalError('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.')
+      setShowErrorModal(true)
+      return
+    }
+
     setLoading(true)
     setGlobalError('')
     
     try {
       // Submit all valid rows in parallel - Call API to send questions
-      console.log('Sending questions to API...', validRows.length, 'questions')
+      console.log('Sending questions to API...', validRows.length, 'questions', {
+        hasToken: !!token,
+        isAuthenticated: authService.isAuthenticated()
+      });
       const results = await Promise.all(
         validRows.map(row => questionService.addQuestion(row.category, row.content.trim()))
       )

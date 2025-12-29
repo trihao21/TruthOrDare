@@ -160,23 +160,69 @@ export const getRandomQuestion = async (req, res) => {
         ]);
 
         if (!questions || questions.length === 0) {
-            // If no undrawn questions, reset all questions of this type and try again
-            await Question.updateMany(
-                { type: normalizedType },
-                { $set: { isDrawn: false } }
-            );
-
-            // Try again after reset
-            const retryQuestions = await Question.aggregate([
-                { $match: { type: normalizedType } },
-                { $sample: { size: 1 } }
-            ]);
-
-            if (!retryQuestions || retryQuestions.length === 0) {
-                return res.status(404).json({ error: 'No questions found for this type' });
+            // If no undrawn questions, try to get from the other type (truth <-> dare)
+            // Only fallback for truth and dare, not for lucky
+            const fallbackType = normalizedType === 'truth' ? 'dare' : normalizedType === 'dare' ? 'truth' : null;
+            
+            if (fallbackType) {
+                const fallbackQuery = {
+                    type: fallbackType,
+                    isDrawn: false
+                };
+                
+                if (excludeIds && excludeIds.length > 0) {
+                    fallbackQuery._id = { $nin: excludeIds };
+                }
+                
+                const fallbackQuestions = await Question.aggregate([
+                    { $match: fallbackQuery },
+                    { $sample: { size: 1 } }
+                ]);
+                
+                if (fallbackQuestions && fallbackQuestions.length > 0) {
+                    // Return fallback question
+                    return res.json({ question: fallbackQuestions[0] });
+                }
+                
+                // If fallback also has no questions, check if both types are exhausted
+                // Only reset if BOTH types are exhausted
+                const truthCount = await Question.countDocuments({ type: 'truth', isDrawn: false });
+                const dareCount = await Question.countDocuments({ type: 'dare', isDrawn: false });
+                
+                if (truthCount === 0 && dareCount === 0) {
+                    // Both types exhausted, reset both
+                    await Question.updateMany(
+                        { type: { $in: ['truth', 'dare'] } },
+                        { $set: { isDrawn: false } }
+                    );
+                    
+                    // Try again with original type after reset
+                    const retryQuery = {
+                        type: normalizedType,
+                        isDrawn: false
+                    };
+                    
+                    if (excludeIds && excludeIds.length > 0) {
+                        retryQuery._id = { $nin: excludeIds };
+                    }
+                    
+                    const retryQuestions = await Question.aggregate([
+                        { $match: retryQuery },
+                        { $sample: { size: 1 } }
+                    ]);
+                    
+                    if (retryQuestions && retryQuestions.length > 0) {
+                        return res.json({ question: retryQuestions[0] });
+                    }
+                } else {
+                    // One type exhausted but other still has questions, return fallback even if empty
+                    // This should not happen, but handle gracefully
+                    return res.status(404).json({ error: `No questions available. ${normalizedType} exhausted, ${fallbackType} also exhausted.` });
+                }
             }
-
-            return res.json({ question: retryQuestions[0] });
+            
+            // For lucky or other types, just return error
+            return res.status(404).json({ error: 'No questions found for this type' });
         }
 
         res.json({ question: questions[0] });
