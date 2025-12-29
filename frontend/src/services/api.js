@@ -59,10 +59,6 @@ const httpClient = {
     };
 
     try {
-      console.log(`Making request to: ${API_URL}${url}`, {
-        hasToken: !!token,
-        method: options.method || 'GET',
-      });
       const response = await fetch(`${API_URL}${url}`, config);
       
       // Handle auth errors
@@ -127,9 +123,7 @@ export const api = {
     const response = await httpClient.post('/auth/login', { username, password });
     if (response.token) {
       tokenManager.setToken(response.token);
-      console.log('Token saved after login:', !!tokenManager.getToken());
     } else {
-      console.error('No token in login response:', response);
       throw new Error('Không nhận được token từ server');
     }
     return response;
@@ -198,7 +192,6 @@ export const api = {
 
   async getIdentitiesStatus() {
     const response = await httpClient.get('/identities/status');
-    console.log('Identities status from backend:', response);
     return response;
   },
 

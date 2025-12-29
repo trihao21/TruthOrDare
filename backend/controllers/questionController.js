@@ -1,16 +1,25 @@
 import Question from '../models/Question.js';
 
-// Get all questions
+// Get all questions - only return user's questions if authenticated
 export const getAllQuestions = async (req, res) => {
     try {
-        const questions = await Question.find().sort({ createdAt: -1 });
-        res.json(questions);
+        // If user is authenticated, only return their questions
+        if (req.userId) {
+            const userIdString = req.userId.toString();
+            const questions = await Question.find({ 
+                userId: userIdString 
+            }).sort({ createdAt: -1 });
+            return res.json(questions);
+        }
+        
+        // If not authenticated, return empty array (no questions visible)
+        res.json([]);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Get questions by type (truth/dare/lucky)
+// Get questions by type (truth/dare/lucky) - only return user's questions if authenticated
 export const getQuestionsByCategory = async (req, res) => {
     try {
         const { category } = req.params;
@@ -24,7 +33,20 @@ export const getQuestionsByCategory = async (req, res) => {
             'lucky': 'lucky'
         };
         const type = typeMap[category] || category.toLowerCase();
-        const questions = await Question.find({ type }).sort({ createdAt: -1 });
+        
+        // Build query
+        const query = { type };
+        
+        // If user is authenticated, only return their questions
+        if (req.userId) {
+            const userIdString = req.userId.toString();
+            query.userId = userIdString;
+        } else {
+            // If not authenticated, return empty array
+            return res.json([]);
+        }
+        
+        const questions = await Question.find(query).sort({ createdAt: -1 });
         res.json(questions);
     } catch (error) {
         res.status(500).json({ error: error.message });

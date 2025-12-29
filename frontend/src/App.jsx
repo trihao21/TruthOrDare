@@ -24,16 +24,12 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  console.log('App rendered, loading:', loading, 'error:', error)
-
   useEffect(() => {
-    console.log('App useEffect triggered')
     let isMounted = true
     
     // Set a maximum loading time to prevent infinite loading (increased for Render wake-up)
     const maxLoadingTimer = setTimeout(() => {
       if (isMounted) {
-        console.warn('Loading timeout - rendering app anyway')
         setLoading(false)
         setError('Server lỏ nên hay bị lỗi. Mọi người bấm nút Thử lại bên dưới để reload nha!')
         setQuestions({
@@ -77,7 +73,6 @@ function App() {
 
   const loadQuestions = async () => {
     try {
-      console.log('Loading questions...')
       setLoading(true)
       setError(null)
       
@@ -90,11 +85,9 @@ function App() {
         api.getAllQuestions(),
         timeoutPromise
       ])
-      console.log('API response:', response)
       
       // Handle both array and object responses
       const data = response.questions || response
-      console.log('Processed data:', data)
       
       const grouped = {
         'TRUTH': [],
@@ -121,7 +114,6 @@ function App() {
         })
       }
 
-      console.log('Grouped questions:', grouped)
       setQuestions(grouped)
     } catch (error) {
       console.error('Failed to load questions:', error)

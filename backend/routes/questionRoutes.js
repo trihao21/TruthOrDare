@@ -10,7 +10,7 @@ import {
     markAsDrawn,
     getQuestionCounts
 } from '../controllers/questionController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
@@ -27,10 +27,10 @@ router.get('/counts', getQuestionCounts);
 // Mark question as drawn (must be before /:category route)
 router.patch('/:id/drawn', markAsDrawn);
 
-// Public routes - anyone can view questions
-router.get('/', getAllQuestions);
+// Public routes - but filter by user if authenticated
+router.get('/', optionalAuth, getAllQuestions);
 router.get('/user/:userId', getUserQuestions);
-router.get('/:category', getQuestionsByCategory);
+router.get('/:category', optionalAuth, getQuestionsByCategory);
 
 // Protected routes - must be authenticated
 router.post('/', authenticate, addQuestion);

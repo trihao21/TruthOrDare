@@ -56,7 +56,8 @@ function AddQuestionPage() {
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -210,7 +211,8 @@ function AddQuestionPage() {
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
           // Get current question counts (already existing in database)
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           existingTruthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           existingDareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -412,15 +414,9 @@ function AddQuestionPage() {
     
     try {
       // Submit all valid rows in parallel - Call API to send questions
-      console.log('Sending questions to API...', validRows.length, 'questions', {
-        hasToken: !!token,
-        isAuthenticated: authService.isAuthenticated()
-      });
       const results = await Promise.all(
         validRows.map(row => questionService.addQuestion(row.category, row.content.trim()))
       )
-
-      console.log('API response:', results)
 
       // Check results and collect detailed errors
       const failedSubmissions = results.filter(result => !result.success)
@@ -439,7 +435,8 @@ function AddQuestionPage() {
           const updatedUser = authService.getCurrentUser()
           const userId = updatedUser?.id || updatedUser?._id
           if (userId) {
-            const userQuestions = await questionService.getUserQuestions(userId.toString())
+            // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
             // userQuestions is now always an array (empty if API fails)
             const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
             const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length
@@ -456,7 +453,8 @@ function AddQuestionPage() {
         const updatedUser = authService.getCurrentUser()
         const userId = updatedUser?.id || updatedUser?._id
         if (userId) {
-          const userQuestions = await questionService.getUserQuestions(userId.toString())
+          // Use getAllQuestions which now returns only user's questions
+          const userQuestions = await questionService.getAllQuestions(false)
           // userQuestions is now always an array (empty if API fails)
           const truthCount = (userQuestions || []).filter(q => (q.type || q.category) === 'truth').length
           const dareCount = (userQuestions || []).filter(q => (q.type || q.category) === 'dare').length

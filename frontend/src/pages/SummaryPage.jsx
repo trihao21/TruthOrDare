@@ -73,24 +73,16 @@ function SummaryPage() {
     try {
       // Convert userId to string (in case it's ObjectId)
       const userIdString = userId.toString()
-      console.log('Fetching questions for userId:', userIdString)
       
-      // Use API to get user questions directly
-      const response = await questionService.getUserQuestions(userIdString)
-      console.log('API response:', response)
+      // Use getAllQuestions which now returns only user's questions
+      const response = await questionService.getAllQuestions(false)
       setQuestions(response || [])
     } catch (error) {
       console.error('Error fetching user questions:', error)
-      // Fallback: Get all questions and filter by userId
+      // Fallback: getAllQuestions already returns only user's questions, so no need to filter
       try {
         const allQuestions = await questionService.getAllQuestions(false) // Don't use cache
-        const userIdString = userId.toString()
-        const userQuestions = allQuestions.filter(q => {
-          const qUserId = q.userId ? q.userId.toString() : null
-          return qUserId === userIdString
-        })
-        console.log('Fallback: Found', userQuestions.length, 'questions')
-        setQuestions(userQuestions)
+        setQuestions(allQuestions)
       } catch (fallbackError) {
         console.error('Fallback also failed:', fallbackError)
         throw error

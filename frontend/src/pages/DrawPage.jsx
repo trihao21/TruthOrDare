@@ -100,7 +100,6 @@ function DrawPage() {
         
         // Draw identity from backend
         const result = await identityService.drawRandomIdentity(tempUsername)
-        console.log('Draw result:', result) // Debug log
         
         // Handle result - could be identity object or {identity, account} object
         let identity = null
@@ -119,16 +118,11 @@ function DrawPage() {
         setShowResult(true)
         setIsDrawing(false)
         
-        console.log('Account info:', account) // Debug log
-        
         // Show account info modal if account info is available
         // Use setTimeout to ensure state is set before showing modal
         setTimeout(() => {
           if (account && account.username && account.password) {
-            console.log('Showing account modal') // Debug log
             setShowAccountModal(true)
-          } else {
-            console.log('Account info missing:', { account, hasUsername: account?.username, hasPassword: account?.password }) // Debug log
           }
         }, 100)
 

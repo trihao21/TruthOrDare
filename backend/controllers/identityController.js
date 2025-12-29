@@ -155,7 +155,6 @@ export const getIdentitiesStatus = async (req, res) => {
     const assignments = await IdentityAssignment.find({});
     const takenIds = assignments.map(a => a.identityId);
     
-    console.log(`[Status] Device: ${deviceId.substring(0, 10)}... | Taken IDs:`, takenIds);
     
     // Get current device's identity
     const currentAssignment = await IdentityAssignment.findOne({ deviceId });
