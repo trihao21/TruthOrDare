@@ -33,25 +33,49 @@ function LoginPage() {
       
       if (result.success) {
         // Check if this username matches player pattern (player1, player2, etc.)
-        // Player accounts are always created from identity assignment, so redirect to add-question
+        // Player accounts are always created from identity assignment
         const isPlayerAccount = /^player\d+$/.test(username.toLowerCase())
         
         if (isPlayerAccount) {
-          // Try to sync identity from backend (based on deviceId)
-          // This ensures identity is available in localStorage for the app to use
+          // USE CASE: User đã bốc thăm ở thiết bị A, bây giờ đăng nhập ở thiết bị B
+          // Cần sync identity từ backend dựa trên username (không phải deviceId)
+          // Backend sẽ tự động update deviceId để thiết bị B cũng có identity này
           try {
-            await identityService.getCurrentIdentityFromBackend()
+            const identity = await identityService.getIdentityByUsername(username)
+            
+            if (!identity) {
+              // Không tìm thấy identity assignment cho username này
+              // Có thể user chưa bốc thăm hoặc có vấn đề với database
+              setError('Không tìm thấy thông tin identity. Vui lòng bốc thăm lại hoặc liên hệ hỗ trợ.')
+              setLoading(false)
+              return
+            }
+            
+            // Identity đã được sync vào localStorage, có thể tiếp tục
+            console.log('Identity synced successfully for user:', username)
           } catch (error) {
             console.error('Error syncing identity from backend:', error)
-            // Continue anyway - identity might be in localStorage already
+            // Nếu sync thất bại, thử fallback: check localStorage hoặc get by deviceId
+            const localIdentity = identityService.getAssignedIdentity()
+            if (!localIdentity) {
+              // Không có identity trong localStorage, thử get by deviceId (trường hợp cùng device)
+              try {
+                await identityService.getCurrentIdentityFromBackend()
+              } catch (fallbackError) {
+                console.error('Fallback sync also failed:', fallbackError)
+                setError('Không thể đồng bộ thông tin identity. Vui lòng thử lại hoặc bốc thăm lại.')
+                setLoading(false)
+                return
+              }
+            }
           }
           
-          // Always redirect player accounts to add-question
+          // Player accounts luôn redirect đến add-question sau khi sync identity thành công
           navigate('/add-question', { replace: true })
           return
         }
         
-        // For non-player accounts, check if there's an identity assigned in localStorage
+        // For non-player accounts (admin, etc.), check if there's an identity assigned in localStorage
         const assignedIdentity = identityService.getAssignedIdentity()
         
         // If user has identity, redirect to add-question

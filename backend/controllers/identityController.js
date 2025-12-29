@@ -206,6 +206,62 @@ export const getCurrentIdentity = async (req, res) => {
   }
 };
 
+// Get identity assignment by username
+// USE CASE: User đã bốc thăm ở thiết bị A, bây giờ đăng nhập ở thiết bị B
+// Endpoint này cho phép user đăng nhập trên thiết bị khác và vẫn có identity của họ
+// Backend sẽ tự động update deviceId để thiết bị mới cũng có identity này
+export const getIdentityByUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    // Tìm identity assignment dựa trên username (không phải deviceId)
+    // Điều này cho phép user đăng nhập trên thiết bị khác
+    const assignment = await IdentityAssignment.findOne({ username });
+    
+    if (!assignment) {
+      // Không tìm thấy identity assignment cho username này
+      // Có thể user chưa bốc thăm hoặc username không đúng
+      return res.json({
+        success: true,
+        identity: null
+      });
+    }
+
+    const identity = IDENTITIES.find(id => id.id === assignment.identityId);
+    
+    if (!identity) {
+      return res.status(500).json({ 
+        error: 'Identity not found in IDENTITIES list' 
+      });
+    }
+    
+    // QUAN TRỌNG: Update deviceId nếu user đăng nhập từ thiết bị khác
+    // Điều này đảm bảo thiết bị mới cũng có identity này
+    const deviceId = getDeviceId(req);
+    if (deviceId && assignment.deviceId !== deviceId) {
+      console.log(`Updating deviceId for username ${username}: ${assignment.deviceId} -> ${deviceId}`);
+      assignment.deviceId = deviceId;
+      await assignment.save();
+    }
+    
+    res.json({
+      success: true,
+      identity,
+      account: {
+        username: assignment.username,
+        password: assignment.password || '123456' // Fallback to default if password not set
+      }
+    });
+  } catch (error) {
+    console.error('Get identity by username error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Reset all assignments (for testing)
 export const resetAllAssignments = async (req, res) => {
   try {

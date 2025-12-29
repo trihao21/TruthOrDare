@@ -35,19 +35,45 @@ function AddQuestionPage() {
 
   const MAX_QUESTIONS_PER_CATEGORY = 10
 
-  // Load user question counts on mount
+  // Sync identity from backend and load user question counts on mount
   useEffect(() => {
-    const loadUserQuestionCounts = async () => {
+    const syncIdentityAndLoadCounts = async () => {
       try {
-        const identity = identityService.getAssignedIdentity()
+        // First, check if user is authenticated but doesn't have identity in localStorage
+        const currentUser = authService.getCurrentUser()
+        const isAuthenticated = authService.isAuthenticated()
+        let identity = identityService.getAssignedIdentity()
+        
+        // If user is authenticated with a player account but no identity in localStorage,
+        // try to sync identity from backend
+        if (isAuthenticated && currentUser) {
+          const isPlayerAccount = /^player\d+$/.test(currentUser.username?.toLowerCase() || '')
+          if (isPlayerAccount && !identity) {
+            try {
+              // Try to get identity from backend by username (works even on different device)
+              identity = await identityService.getIdentityByUsername(currentUser.username)
+              if (!identity) {
+                // Fallback: try to get by deviceId
+                identity = await identityService.getCurrentIdentityFromBackend()
+              }
+              if (identity) {
+                console.log('Synced identity from backend:', identity)
+              }
+            } catch (error) {
+              console.error('Error syncing identity from backend:', error)
+            }
+          }
+        }
+        
+        // If still no identity, return early
+        identity = identityService.getAssignedIdentity()
         if (!identity) return
 
         const username = identityService.getUsernameFromIdentity(identity)
         if (!username) return
 
-        // Auto-login to get user info
-        const currentUser = authService.getCurrentUser()
-        if (!authService.isAuthenticated() || !currentUser || currentUser.username !== username) {
+        // Auto-login to get user info if needed
+        if (!isAuthenticated || !currentUser || currentUser.username !== username) {
           // Get password from account info
           const accountInfo = identityService.getAccountInfo()
           const password = accountInfo?.password || '123456' // Fallback to default if accountInfo not available
@@ -65,13 +91,13 @@ function AddQuestionPage() {
           setUserQuestionCounts({ truth: truthCount, dare: dareCount })
         }
       } catch (error) {
-        console.error('Error loading user question counts:', error)
+        console.error('Error syncing identity and loading user question counts:', error)
         // Set to 0 if error - backend will still validate
         setUserQuestionCounts({ truth: 0, dare: 0 })
       }
     }
 
-    loadUserQuestionCounts()
+    syncIdentityAndLoadCounts()
   }, [])
 
   const handleAddRow = () => {
