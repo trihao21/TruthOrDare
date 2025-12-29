@@ -206,6 +206,46 @@ export const markAsDrawn = async (req, res) => {
     }
 };
 
+// Get question counts by type (total and drawn)
+export const getQuestionCounts = async (req, res) => {
+    try {
+        const counts = await Question.aggregate([
+            {
+                $group: {
+                    _id: '$type',
+                    total: { $sum: 1 },
+                    drawn: {
+                        $sum: {
+                            $cond: [{ $eq: ['$isDrawn', true] }, 1, 0]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        // Format response
+        const result = {
+            truth: { total: 0, drawn: 0 },
+            dare: { total: 0, drawn: 0 },
+            lucky: { total: 0, drawn: 0 }
+        };
+
+        counts.forEach(item => {
+            const type = item._id;
+            if (result[type]) {
+                result[type] = {
+                    total: item.total,
+                    drawn: item.drawn
+                };
+            }
+        });
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Seed default questions
 export const seedDefaultQuestions = async (req, res) => {
     try {
