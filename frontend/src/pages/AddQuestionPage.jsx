@@ -21,6 +21,7 @@ function AddQuestionPage() {
   ])
   const [loading, setLoading] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [globalError, setGlobalError] = useState('')
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -510,12 +511,16 @@ function AddQuestionPage() {
 
             {/* Mobile Menu Button */}
             <button
-              onClick={() => setShowInfo(true)}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
               aria-label="Toggle menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
 
@@ -585,9 +590,101 @@ function AddQuestionPage() {
               )}
 
               {/* Info Button */}
-             
+              <button
+                onClick={() => setShowInfo(true)}
+                className="hidden md:flex p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label="Show instructions"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
             </div>
           </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
+              {identity && (
+                <>
+                  <Link 
+                    to="/add-question" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/add-question') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Thêm câu hỏi
+                  </Link>
+                  <Link 
+                    to="/summary" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive('/summary') 
+                        ? 'text-purple-600 bg-purple-50 font-semibold' 
+                        : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    Câu hỏi của tôi
+                  </Link>
+                </>
+              )}
+              
+              <Link 
+                to="/timeline" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
+              >
+                Timeline
+              </Link>
+              
+              {identity ? (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <span className="text-2xl">{identity.avatar}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {identity.displayName}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={async () => {
+                      await authService.logout()
+                      identityService.setManualLogout()
+                      setMobileMenuOpen(false)
+                      navigate('/')
+                    }}
+                    className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-all duration-200"
+                  >
+                    Đăng xuất
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowInfo(true)
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Hướng dẫn
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 text-center"
+                >
+                  Bốc thăm
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </nav>
 
